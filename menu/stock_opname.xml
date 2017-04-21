@@ -1,5 +1,11 @@
 <openerp>
 	<data>
 
+		<record id="ipc_action_stock_opname_inject" model="ir.actions.act_window">
+			<field name="name">Stock Opname Injects</field>
+			<field name="res_model">stock.opname.inject</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+		</record>
 	</data>
 </openerp>

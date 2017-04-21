@@ -21,7 +21,8 @@ class stock_opname_inject(osv.osv):
 	_description = "Stock opname inject"
 	
 	_columns = {
-		'name': fields.char('Location Name', required=True, translate=True),
+		'product_id': fields.many2one('product.product', 'Product', required=True),
+		'priority': fields.selection([(1, '1'), (2, '2')], 'Priority'),
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
@@ -36,13 +37,11 @@ class stock_opname_memory(osv.osv):
 	_description = "Stock opname memory"
 	
 	_columns = {
-		'date': date
-		'location_id': m2o stock.location yang domainnya is_branch == True;
-		Onchange: ubah location_id di line domainnya jadi yang parent_id nya location_id ini
-		'employee_id': m2o hr.employee
-		'line_ids'': o2m stock.opname.memory.line
-	
-	'name': fields.char('Location Name', required=True, translate=True),
+		'date': fields.datetime('Date', required=True),
+		'location_id': fields.many2one('stock.location', 'Inventoried Location'),
+		# TODO Onchange: ubah location_id di line domainnya jadi yang parent_id nya location_id ini
+		'employee_id': fields.many2one('hr.employee', 'Employee'),
+		'line_ids': fields.one2many('stock.inventory.line', 'inventory_id', 'Inventories', help="Inventory Lines."),
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
