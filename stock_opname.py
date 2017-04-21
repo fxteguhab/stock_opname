@@ -103,7 +103,7 @@ class stock_opname_memory(osv.osv_memory):
 	
 	_columns = {
 		'date': fields.datetime('Date', required=True),
-		'location_id': fields.many2one('stock.location', 'Inventories Location', required=True),
+		'location_id': fields.many2one('stock.location', 'Inventoried Location', required=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee'),
 		'algorithm_id': fields.many2one('stock.opname.rule', 'Rule'),
 		'line_ids': fields.one2many('stock.opname.memory.line', 'stock_opname_memory_id', 'Inventories', help="Inventory Lines."),
@@ -134,7 +134,7 @@ class stock_opname_memory(osv.osv_memory):
 		if len(active_algorithm_ids) == 0:
 			raise osv.except_orm(_('Generating Stock Opname Error'),
 				_('There is no Stock Opname Rule marked as being used.'))
-		return active_algorithm_ids
+		return active_algorithm_ids[0]
 	
 	_defaults = {
 		'line_ids': _get_line_ids,
@@ -162,12 +162,14 @@ class stock_opname_memory(osv.osv_memory):
 					'product_uom_id': line.product_uom_id.id,
 					'product_qty': line.product_qty,
 				}))
-			
+				
 			stock_opname = {
 				'name': 'SO ' + today.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'state': 'confirm',
 				'date': memory.date,
-				'expiration_date': today + timedelta(hours=memory.algorithm_id.expiration_time_length),
+				'expiration_date': (datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT)
+									+ timedelta(hours=memory.algorithm_id.expiration_time_length))
+					.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id,
 				'location_id': memory.location_id.id,
 				'line_ids': line_ids,
