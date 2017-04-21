@@ -1,6 +1,40 @@
 <openerp>
 	<data>
 
+		<!-- RULE -->
+		<record model="ir.ui.view" id="stock_opname_rule_form">
+			<field name="name">stock.opname.rule.form</field>
+			<field name="model">stock.opname.rule</field>
+			<field name="arch" type="xml">
+				<form string="Rule" version="7.0">
+					<group col="2">
+						<group>
+							<field name="name"/>
+							<field name="is_used"/>
+							<field name="algorithm"/>
+							<field name="expiration_time_length"/>
+							<field name="max_item_count"/>
+							<field name="max_total_qty"/>
+						</group>
+					</group>
+				</form>
+			</field>
+		</record>
+
+		<record model="ir.ui.view" id="stock_opname_rule_tree">
+			<field name="name">stock.opname.rule.tree</field>
+			<field name="model">stock.opname.rule</field>
+			<field name="arch" type="xml">
+				<tree string="Rule" version="7.0">
+					<field name="name"/>
+					<field name="is_used"/>
+					<field name="expiration_time_length"/>
+					<field name="max_item_count"/>
+					<field name="max_total_qty"/>
+				</tree>
+			</field>
+		</record>
+
 		<!-- INJECT -->
 		<record id="stock_opname_inject_form" model="ir.ui.view">
 			<field name="name">stock.opname.inject.form</field>

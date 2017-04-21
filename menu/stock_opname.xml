@@ -1,15 +1,23 @@
 <openerp>
 	<data>
+		<record id="stock_opname_action_stock_opname_rule" model="ir.actions.act_window">
+			<field name="name">Stock Opname Rules</field>
+			<field name="res_model">stock.opname.rule</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+		</record>
 
-		<record id="ipc_action_stock_opname_inject" model="ir.actions.act_window">
+		<record id="stock_opname_action_stock_opname_inject" model="ir.actions.act_window">
 			<field name="name">Stock Opname Injects</field>
 			<field name="res_model">stock.opname.inject</field>
 			<field name="view_type">form</field>
 			<field name="view_mode">tree,form</field>
 		</record>
 
-		<menuitem sequence="1" parent="stock.menu_stock_configuration" action="ipc_action_stock_opname_inject"
-				id="ipc_menu_stock_opname_inject" />
-
+		<menuitem sequence="1" id="stock_opname_menu_stock_opname" name="Stock Opname" parent="stock.menu_stock_root"/>
+			<menuitem sequence="11" id="stock_opname_menu_stock_opname_rule" name="Stock Opname Rule"
+					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_rule"/>
+			<menuitem sequence="12" id="stock_opname_menu_stock_opname_inject" name="Stock Opname Inject"
+					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_inject"/>
 	</data>
 </openerp>
