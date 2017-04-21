@@ -16,6 +16,7 @@
 	'depends': ['base','board','web','stock'],
 	'data': [
 		'views/stock_opname.xml',
+		'menu/stock_opname.xml',
 	],
 	'demo': [
 	],
