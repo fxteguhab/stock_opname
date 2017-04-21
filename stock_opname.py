@@ -1,5 +1,5 @@
 from openerp.osv import fields, osv
-
+import openerp.addons.decimal_precision as dp
 
 class stock_opname_rule(osv.osv):
 	_name = "stock.opname.rule"
