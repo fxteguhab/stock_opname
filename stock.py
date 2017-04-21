@@ -35,7 +35,8 @@ class stock_inventory_line(osv.osv):
 
 class stock_bonus_usage(osv.osv):
 	
-	_inherit = 'stock.bonus.usage'
+	_name = 'stock.bonus.usage'
+	_description = 'Stock Bonus Usage'
 	
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
@@ -67,4 +68,19 @@ class stock_bonus_usage(osv.osv):
 	def action_reject (self, cr, uid, ids, context=None):
 		return
 
+# ==========================================================================================================================
+
+class stock_bonus_usage_line(osv.osv):
+	
+	_name = 'stock.bonus.usage.line'
+	_description = 'Stock Bonus Usage Line'
+	
+	# COLUMNS ---------------------------------------------------------------------------------------------------------------
+	
+	_columns = {
+		'product_id': fields.many2one('product.product', 'Product', required=True),
+		'qty': fields.float('Qty', required=True),
+		'unit_of_measure': fields.many2one('product.uom', 'Unit of Measure', required=True),
+	}
+	
 # ==========================================================================================================================
