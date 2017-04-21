@@ -48,7 +48,7 @@
 				</form>
 			</field>
 		</record>
-		domain="[('id', 'child_of', parent.location_id)]
+
 		<record id="stock_opname_inject_tree" model="ir.ui.view">
 			<field name="name">stock.opname.inject.tree</field>
 			<field name="model">stock.opname.inject</field>
