@@ -5,10 +5,6 @@
 			<field name="model">stock.inventory</field>
 			<field name="inherit_id" ref="stock.view_inventory_form" />
 			<field name="arch" type="xml">
-				<!--TODO DELETE DEBUG-->
-				<button name="prepare_inventory" position="after">
-					<button name="debug_cron" string="DEBUG CORN" type="object" class="oe_highlight" />
-				</button>
 				<field name="filter" position="after">
 					<field name="employee_id"/>
 				</field>

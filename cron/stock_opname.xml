@@ -1,0 +1,16 @@
+<openerp>
+	<data>
+		<record forcecreate="True" id="ir_cron_cron_autocancel_expired_stock_opname" model="ir.cron">
+			<field name="name">Autocancel expired stock inventory based on expiration_date and today's time</field>
+			<field eval="True" name="active" />
+			<field name="user_id" ref="base.user_root" />
+			<field name="interval_number">30</field>
+			<field name="interval_type">minutes</field>
+			<field name="numbercall">-1</field>
+			<field name="active">1</field>
+			<field eval="'stock.inventory'" name="model" />
+			<field eval="'cron_autocancel_expired_stock_opname'" name="function" />
+			<field eval="" name="args" />
+		</record>
+	</data>
+</openerp>
