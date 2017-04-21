@@ -1,4 +1,5 @@
 from openerp.osv import osv, fields
+from datetime import datetime
 
 # ==========================================================================================================================
 
@@ -27,7 +28,43 @@ class stock_inventory_line(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'is_inject': fields.boolean('Is inject?'),
+		'is_inject': fields.boolean('Is Inject?'),
 	}
+
+# ==========================================================================================================================
+
+class stock_bonus_usage(osv.osv):
+	
+	_inherit = 'stock.bonus.usage'
+	
+	# COLUMNS ---------------------------------------------------------------------------------------------------------------
+	
+	_columns = {
+		'usage_date': fields.datetime('Usage Date', required=True),
+		'name': fields.text('Name', required=True),
+		'usage_by': fields.many2one('res.users', 'Usage By', required=True),
+		'move_from': fields.many2one('stock.location', 'Move From', required=True),
+		'bonus_usage_line': fields.one2many('stock.bonus.usage.line', 'bonus_usage_id', 'Usage'),
+		'state': fields.selection([
+			('draft','Draft'),
+			('approved','Approved'),
+			('rejected','Rejected')], 'State', required=True),
+	}
+	
+	# DEFAULTS --------------------------------------------------------------------------------------------------------------
+	
+	_defaults = {
+		'request_date': lambda *a: datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+		'usage_by': lambda self, cr, uid, ctx: uid,
+		'state': 'draft',
+	}
+	
+	# ACTION ----------------------------------------------------------------------------------------------------------------
+	
+	def action_approve (self, cr, uid, ids, context=None):
+		return
+	
+	def action_reject (self, cr, uid, ids, context=None):
+		return
 
 # ==========================================================================================================================
