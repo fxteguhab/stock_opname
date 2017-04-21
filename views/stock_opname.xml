@@ -68,11 +68,12 @@
 				<form string="Facility Type">
 					<group>
 						<field name="date"/>
-						<field name="location_id"/>
+						<field name="location_id" on_change="onchange_location_id"/>
 						<field name="employee_id"/>
 						<field name="line_ids">
-							<tree>
-								<field name="location_id" domain="[('id', 'child_of', parent.location_id)]"/>
+							<tree editable="bottom">
+								<field name="location_id" options="{'no_create': 1}"
+										domain="[('id', 'child_of', parent.location_id)]"/>
 								<field name="product_id"/>
 								<field name="product_uom_id"/>
 								<field name="product_qty"/>
@@ -80,6 +81,12 @@
 						</field>
 					</group>
 				</form>
+				<footer>
+					<button name="action_generate_stock_opname" type="object" string="Generate Stock Opname"
+							help="Generate Stock Opname from this" class="oe_highlight"/>
+					or
+					<button string="Cancel" class="oe_link" special="cancel"/>
+				</footer>
 			</field>
 		</record>
 
