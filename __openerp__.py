@@ -1,5 +1,5 @@
 {
-	'name': 'IPC IDSS',
+	'name': 'Stock Opname',
 	'version': '1.0',
 	'author': 'Christyan Juniady and Associates',
 	'maintainer': 'Christyan Juniady and Associates',
@@ -8,12 +8,12 @@
 	'website': 'http://www.chjs.biz',
 	'summary': '',
 	'description': """
-		Custom implementation for Indonesia Port Corporation
+		Stock Opname
 	""",
 	'author': 'Christyan Juniady and Associates',
 	'images': [
 	],
-	'depends': ['base','board','web','document','web_tree_image'],
+	'depends': ['base','board','web','stock'],
 	'data': [
 		'views/stock_opname.xml',
 	],
