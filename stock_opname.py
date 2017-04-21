@@ -111,9 +111,9 @@ class stock_opname_memory(osv.osv_memory):
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
 	
-	def _get_line_ids(self, cr, uid, ids, context=None):
+	def _get_line_ids(self, cr, uid, context=None):
 		if context is None:
-			active_algorithm_id = self._get_algorithm_id(cr, uid, ids, context)
+			active_algorithm_id = self._get_algorithm_id(cr, uid, context)
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_algorithm = rule_obj.browse(cr, uid, active_algorithm_id)
 			try:
@@ -128,7 +128,7 @@ class stock_opname_memory(osv.osv_memory):
 				line_ids.append({'product_id': product_id})
 			return line_ids
 	
-	def _get_algorithm_id(self, cr, uid, ids, context=None):
+	def _get_algorithm_id(self, cr, uid, context=None):
 		rule_obj = self.pool.get('stock.opname.rule')
 		active_algorithm_ids = rule_obj.search(cr, uid, [('is_used', '=', True)])
 		if len(active_algorithm_ids) == 0:
