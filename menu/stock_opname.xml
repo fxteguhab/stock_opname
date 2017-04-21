@@ -1,5 +1,6 @@
 <openerp>
 	<data>
+
 		<record id="stock_opname_action_stock_opname_rule" model="ir.actions.act_window">
 			<field name="name">Stock Opname Rules</field>
 			<field name="res_model">stock.opname.rule</field>
