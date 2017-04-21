@@ -80,13 +80,13 @@
 							</tree>
 						</field>
 					</group>
+					<footer>
+						<button name="action_generate_stock_opname" type="object" string="Generate Stock Opname"
+								help="Generate Stock Opname from this" class="oe_highlight"/>
+						or
+						<button string="Cancel" class="oe_link" special="cancel"/>
+					</footer>
 				</form>
-				<footer>
-					<button name="action_generate_stock_opname" type="object" string="Generate Stock Opname"
-							help="Generate Stock Opname from this" class="oe_highlight"/>
-					or
-					<button string="Cancel" class="oe_link" special="cancel"/>
-				</footer>
 			</field>
 		</record>
 
