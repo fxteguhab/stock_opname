@@ -112,7 +112,7 @@ class stock_opname_memory(osv.osv_memory):
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
 	
 	def _get_line_ids(self, cr, uid, ids, context=None):
-		if context is None:
+		if context is None or (context is not None and not context.get('is_override', False)):
 			active_algorithm_id = self._get_algorithm_id(cr, uid, ids, context)
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_algorithm = rule_obj.browse(cr, uid, active_algorithm_id)
