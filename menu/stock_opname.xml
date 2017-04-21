@@ -14,10 +14,32 @@
 			<field name="view_mode">tree,form</field>
 		</record>
 
+		<record id="stock_opname_action_stock_opname_memory" model="ir.actions.act_window">
+			<field name="name">Create Stock Opname</field>
+			<field name="res_model">stock.opname.memory</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form</field>
+			<field name="target">new</field>
+		</record>
+
+		<record id="stock_opname_action_stock_opname_memory_override" model="ir.actions.act_window">
+			<field name="name">Override Stock Opname</field>
+			<field name="res_model">stock.opname.memory</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">form</field>
+			<field name="target">new</field>
+			<field name="context">{'is_override': True}</field>
+		</record>
+
 		<menuitem sequence="1" id="stock_opname_menu_stock_opname" name="Stock Opname" parent="stock.menu_stock_root"/>
-			<menuitem sequence="11" id="stock_opname_menu_stock_opname_rule" name="Stock Opname Rule"
-					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_rule"/>
-			<menuitem sequence="12" id="stock_opname_menu_stock_opname_inject" name="Stock Opname Inject"
-					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_inject"/>
+			<menuitem sequence="13" id="stock_opname_menu_stock_opname_memory" name="Generate Stock Opname"
+					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_memory"/>
+			<menuitem sequence="14" id="stock_opname_menu_stock_opname_memory_override" name="Override Stock Opname"
+					parent="stock_opname_menu_stock_opname" action="stock_opname_action_stock_opname_memory_override"/>
+
+		<menuitem sequence="1" id="stock_opname_menu_stock_opname_rule" name="Stock Opname Rule"
+				parent="stock.menu_stock_configuration" action="stock_opname_action_stock_opname_rule"/>
+		<menuitem sequence="2" id="stock_opname_menu_stock_opname_inject" name="Stock Opname Inject"
+				parent="stock.menu_stock_configuration" action="stock_opname_action_stock_opname_inject"/>
 	</data>
 </openerp>

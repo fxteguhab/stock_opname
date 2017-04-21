@@ -68,17 +68,22 @@ class stock_opname_inject(osv.osv):
 	
 	_columns = {
 		'product_id': fields.many2one('product.product', 'Product', required=True),
-		'priority': fields.selection([(1, '1'), (2, '2')], 'Priority'),
+		'priority': fields.selection([(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5'), (6, '6')], 'Priority',
+			required=True),
+	}
+	
+	# DEFAULTS --------------------------------------------------------------------------------------------------------------
+	_defaults = {
+		'priority': 1,
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
 	
 	
-	
 # ---------------------------------------------------------------------------------------------------------------------------
 
 
-class stock_opname_memory(osv.osv):
+class stock_opname_memory(osv.osv_memory):
 	_name = "stock.opname.memory"
 	_description = "Stock opname memory"
 	
@@ -87,7 +92,7 @@ class stock_opname_memory(osv.osv):
 		'location_id': fields.many2one('stock.location', 'Inventoried Location'),
 		# TODO Onchange: ubah location_id di line domainnya jadi yang parent_id nya location_id ini
 		'employee_id': fields.many2one('hr.employee', 'Employee'),
-		'line_ids': fields.one2many('stock.inventory.line', 'inventory_id', 'Inventories', help="Inventory Lines."),
+		'line_ids': fields.one2many('stock.opname.memory.line', 'stock_opname_id', 'Inventories', help="Inventory Lines."),
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
@@ -97,13 +102,14 @@ class stock_opname_memory(osv.osv):
 # ---------------------------------------------------------------------------------------------------------------------------
 
 
-class stock_opname_memory_line(osv.osv):
+class stock_opname_memory_line(osv.osv_memory):
 	_name = "stock.opname.memory.line"
 	_description = "Stock opname memory line"
 	
 	_columns = {
+		'stock_opname_id': fields.many2one('stock.opname.memory.line', 'Stock Opname'),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
-		'location_id': fields.many2one('stock.location', 'Location'), # TODO Domain
+		'location_id': fields.many2one('stock.location', 'Location'),
 		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
 		'product_qty': fields.float('Real Quantity', digits_compute=dp.get_precision('Product Unit of Measure')),
 	}

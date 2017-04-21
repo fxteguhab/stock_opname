@@ -48,7 +48,7 @@
 				</form>
 			</field>
 		</record>
-		
+		domain="[('id', 'child_of', parent.location_id)]
 		<record id="stock_opname_inject_tree" model="ir.ui.view">
 			<field name="name">stock.opname.inject.tree</field>
 			<field name="model">stock.opname.inject</field>
@@ -57,6 +57,29 @@
 					<field name="product_id" />
 					<field name="priority"/>
 				</tree>
+			</field>
+		</record>
+
+		<!-- STOCK OPNAME MEMORY -->
+		<record id="stock_opname_memory_form" model="ir.ui.view">
+			<field name="name">stock.opname.memory.form</field>
+			<field name="model">stock.opname.memory</field>
+			<field name="arch" type="xml">
+				<form string="Facility Type">
+					<group>
+						<field name="date"/>
+						<field name="location_id"/>
+						<field name="employee_id"/>
+						<field name="line_ids">
+							<tree>
+								<field name="location_id" domain="[('id', 'child_of', parent.location_id)]"/>
+								<field name="product_id"/>
+								<field name="product_uom_id"/>
+								<field name="product_qty"/>
+							</tree>
+						</field>
+					</group>
+				</form>
 			</field>
 		</record>
 
