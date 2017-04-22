@@ -25,7 +25,7 @@ class stock_opname_rule(osv.osv):
 	
 	_defaults = {
 		'is_used': False,
-		'algorithm': "def generate_stock_opname_products():\n	return [{'product_id':1, 'product_qty':10}]",
+		'algorithm': "def generate_stock_opname_products():\n	return [{'product_id':1}]",
 		'max_item_count': 1,
 	}
 	
@@ -82,19 +82,17 @@ class stock_opname_inject(osv.osv):
 	
 	_columns = {
 		'product_id': fields.many2one('product.product', 'Product', required=True),
-		'product_qty': fields.float('Product Quantity', required=True,
-			digits_compute=dp.get_precision('Product Unit of Measure')),
 		'priority': fields.selection([(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5'), (6, '6')], 'Priority',
 			required=True),
+		'active': fields.boolean('Active'),
 	}
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
+	
 	_defaults = {
 		'priority': 1,
+		'active': True,
 	}
-
-# OVERRIDES -------------------------------------------------------------------------------------------------------------
-
 
 # ---------------------------------------------------------------------------------------------------------------------------
 
@@ -113,7 +111,46 @@ class stock_opname_memory(osv.osv_memory):
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
 	
-	def _get_line_ids(self, cr, uid, context=None):
+	def _rule_id(self, cr, uid, context=None):
+		return self._get_rule_id(cr, uid, context)
+	
+	_defaults = {
+		'rule_id': _rule_id,
+	}
+	
+	# ONCHANGES -------------------------------------------------------------------------------------------------------------
+	
+	def onchange_location_id(self, cr, uid, ids, location_id, context=None):
+		line_ids = []
+		stock_location_obj = self.pool.get('stock.location')
+		if location_id:
+			location = stock_location_obj.browse(cr, uid, [location_id])
+			line_ids = self._get_line_ids(cr, uid, location, context)
+		return {'value': {'line_ids': line_ids}}
+	
+	# METHODS ---------------------------------------------------------------------------------------------------------------
+	
+	def _get_theoretical_qty(self, cr, uid, location, product, product_uom, context=None):
+		uom_obj = self.pool.get("product.uom")
+		quant_obj = self.pool.get("stock.quant")
+	# Pool quants
+		args = [
+			# ('company_id', '=', line.company_id.id),
+			('location_id', '=', location.id),
+			# ('lot_id', '=', line.prod_lot_id.id),
+			('product_id','=', product.id),
+			# ('owner_id', '=', line.partner_id.id),
+			# ('package_id', '=', line.package_id.id)
+		]
+		quant_ids = quant_obj.search(cr, uid, args, context=context)
+		quants = quant_obj.browse(cr, uid, quant_ids, context=context)
+	# Calculate theoretical qty
+		total_qty = sum([quant.qty for quant in quants])
+		if product_uom and product.uom_id.id != product_uom.id:
+			total_qty = uom_obj._compute_qty_obj(cr, uid, product.uom_id, total_qty, product_uom, context=context)
+		return total_qty
+	
+	def _get_line_ids(self, cr, uid, location, context=None):
 		if context is None or (context is not None and not context.get('is_override', False)):
 		# Getting the rule first
 			active_rule_id = self._get_rule_id(cr, uid, context)
@@ -121,8 +158,8 @@ class stock_opname_memory(osv.osv_memory):
 			active_rule = rule_obj.browse(cr, uid, active_rule_id)
 			try:
 				exec active_rule.algorithm
-				# noinspection PyUnresolvedReferences
-				products_from_rule = generate_stock_opname_products()
+			# noinspection PyUnresolvedReferences
+				rule_products = generate_stock_opname_products()
 			except:
 				raise osv.except_orm(_('Generating Stock Opname Error'),
 					_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
@@ -136,30 +173,43 @@ class stock_opname_memory(osv.osv_memory):
 			
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
-			product_ids_from_inject = stock_opname_inject_obj.search(cr, uid, [], order='priority ASC')
-			for product_id in product_ids_from_inject:
-				product_inject = stock_opname_inject_obj.browse(cr, uid, product_id)
-				if (maximum_qty == 0 or total_qty+product_inject.product_qty <= maximum_qty) and \
-				product_inject.product_id not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
-					total_qty += product_inject.product_qty
-					product_ids_taken.append(product_inject.product_id)
-					line_ids_from_inject.append({'product_id': product_inject.product_id,
-												'product_qty': product_inject.product_qty,
-												'is_inject': True, })
+			inject_ids = stock_opname_inject_obj.search(cr, uid, [], order='priority ASC')
+			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
+				product = inject.product_id
+				product_uom = inject.product_id.uom_id
+				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
+				if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
+						inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
+					total_qty += theoretical_qty
+					product_ids_taken.append(inject.product_id)
+					line_ids_from_inject.append({
+						'location_id': location.id,
+						'product_uom_id': product_uom.id,
+						'product_id': inject.product_id,
+						'product_qty': theoretical_qty,
+						'inject_id': inject.id,
+					})
 				elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
 					break
 			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
 			line_ids_from_rule = []
-			for product in products_from_rule:
-				if (maximum_qty == 0 or total_qty+product['product_qty'] <= maximum_qty) and \
-				product['product_id'] not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
-					total_qty += product['product_qty']
-					product_ids_taken.append(product['product_id'])
-					line_ids_from_rule.append({'product_id': product['product_id'],
-												'product_qty': product['product_qty'],
-												'is_inject': False, })
+			product_obj = self.pool.get('product.product')
+			for product in rule_products:
+				product = product_obj.browse(cr, uid, [product['product_id']])
+				product_uom = product.uom_id
+				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
+				if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
+						product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
+					total_qty += theoretical_qty
+					product_ids_taken.append(product)
+					line_ids_from_rule.append({
+						'location_id': location.id,
+						'product_uom_id': product_uom.id,
+						'product_id': product,
+						'product_qty': theoretical_qty,
+					})
 				elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
 					break
 			line_ids.extend(line_ids_from_rule)
@@ -176,33 +226,27 @@ class stock_opname_memory(osv.osv_memory):
 		else:
 			return 0
 	
-	_defaults = {
-		'rule_id': _get_rule_id,
-		'line_ids': _get_line_ids,
-	}
-	
-	# ONCHANGE --------------------------------------------------------------------------------------------------------------
-	
-	def onchange_location_id(self, cr, uid, ids):
-		return {'value': {'line_ids': []}}
-	
-	# METHOD ----------------------------------------------------------------------------------------------------------------
+	# ACTIONS ---------------------------------------------------------------------------------------------------------------
 	
 	def action_generate_stock_opname(self, cr, uid, ids, context=None):
 		stock_opname_obj = self.pool.get('stock.inventory')
+		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
 		today = datetime.now()
 		for memory in self.browse(cr, uid, ids):
 			memory_line_id = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
 			line_ids = []
 			for line in memory_line_id:
+				is_inject = True if line.inject_id else False
 				line_ids.append((0, False, {
 					'location_id': line.location_id.id,
 					'product_id': line.product_id.id,
 					'product_uom_id': line.product_uom_id.id,
 					'product_qty': line.product_qty,
-					'is_inject': line.is_inject,
+					'is_inject': is_inject,
 				}))
+				if is_inject:
+					stock_opname_inject_obj.write(cr, uid, [line.inject_id.id], {"active": False}, context)
 			
 			memory_hour = int(memory.rule_id.expiration_time_length)
 			memory_minute = (memory.rule_id.expiration_time_length - memory_hour) * 60
@@ -213,7 +257,7 @@ class stock_opname_memory(osv.osv_memory):
 				'expiration_date': (datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT)
 									+ timedelta(hours=memory_hour) + timedelta(minutes=memory_minute))
 					.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-				'employee_id': memory.employee_id.id,
+				'employee_id': memory.employee_id.id if memory.employee_id else None,
 				'location_id': memory.location_id.id,
 				'line_ids': line_ids,
 			}
@@ -233,7 +277,7 @@ class stock_opname_memory_line(osv.osv_memory):
 		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
 		'product_qty': fields.float('Real Quantity', required=True,
 			digits_compute=dp.get_precision('Product Unit of Measure')),
-		'is_inject': fields.boolean('Is Inject?'),
+		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
 	}
 	
 	_defaults = {

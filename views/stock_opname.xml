@@ -43,8 +43,8 @@
 				<form string="Facility Type">
 					<group>
 						<field name="product_id" />
-						<field name="product_qty" />
 						<field name="priority"/>
+						<field name="active"/>
 					</group>
 				</form>
 			</field>
@@ -69,7 +69,7 @@
 				<form string="Facility Type">
 					<group>
 						<field name="date"/>
-						<field name="location_id" on_change="onchange_location_id"/>
+						<field name="location_id" on_change="onchange_location_id(location_id)"/>
 						<field name="employee_id"/>
 						<field name="rule_id" invisible="1"/>
 						<field name="line_ids">
@@ -79,7 +79,7 @@
 								<field name="product_id"/>
 								<field name="product_uom_id"/>
 								<field name="product_qty"/>
-								<field name="is_inject" invisible="1"/>
+								<field name="inject_id" invisible="1"/>
 							</tree>
 						</field>
 					</group>

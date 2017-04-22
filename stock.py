@@ -12,7 +12,7 @@ class stock_inventory(osv.osv):
 	
 	_columns = {
 		'expiration_date': fields.datetime('Expiration Date'),
-		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
+		'employee_id': fields.many2one('hr.employee', 'Employee'),
 	}
 
 	# CRON ------------------------------------------------------------------------------------------------------------------
