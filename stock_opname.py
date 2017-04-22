@@ -139,7 +139,7 @@ class stock_opname_memory(osv.osv_memory):
 			product_ids_from_inject = stock_opname_inject_obj.search(cr, uid, [], order='priority ASC')
 			for product_id in product_ids_from_inject:
 				product_inject = stock_opname_inject_obj.browse(cr, uid, product_id)
-				if total_qty+product_inject.product_qty <= maximum_qty and \
+				if (maximum_qty == 0 or total_qty+product_inject.product_qty <= maximum_qty) and \
 				product_inject.product_id not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
 					total_qty += product_inject.product_qty
 					product_ids_taken.append(product_inject.product_id)
@@ -153,7 +153,7 @@ class stock_opname_memory(osv.osv_memory):
 		# Process the rule with the algorithm
 			line_ids_from_rule = []
 			for product in products_from_rule:
-				if total_qty+product['product_qty'] <= maximum_qty and \
+				if (maximum_qty == 0 or total_qty+product['product_qty'] <= maximum_qty) and \
 				product['product_id'] not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
 					total_qty += product['product_qty']
 					product_ids_taken.append(product['product_id'])
