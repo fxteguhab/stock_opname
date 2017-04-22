@@ -203,13 +203,15 @@ class stock_opname_memory(osv.osv_memory):
 					'product_qty': line.product_qty,
 					'is_inject': line.is_inject,
 				}))
-				
+			
+			memory_hour = int(memory.rule_id.expiration_time_length)
+			memory_minute = (memory.rule_id.expiration_time_length - memory_hour) * 60
 			stock_opname = {
 				'name': 'SO ' + today.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-				'state': 'confirm' if memory.algorithm_id.id else 'done',
+				'state': 'confirm' if memory.rule_id.id else 'done',
 				'date': memory.date,
 				'expiration_date': (datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT)
-									+ timedelta(hours=memory.algorithm_id.expiration_time_length))
+									+ timedelta(hours=memory_hour) + timedelta(minutes=memory_minute))
 					.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id,
 				'location_id': memory.location_id.id,
