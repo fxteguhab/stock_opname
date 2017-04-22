@@ -18,7 +18,7 @@
 		'views/stock_opname_view.xml',
 		'views/stock_view.xml',
 		'menu/stock_opname_menu.xml',
-		'cron/stock_opname_view.xml',
+		'cron/stock_opname_cron.xml',
 	],
 	'demo': [
 	],
