@@ -15,10 +15,10 @@
 	],
 	'depends': ['base','board','web','stock'],
 	'data': [
-		'views/stock_opname.xml',
+		'views/stock_opname_view.xml',
 		'views/stock_view.xml',
-		'menu/stock_opname.xml',
-		'cron/stock_opname.xml',
+		'menu/stock_opname_view.xml',
+		'cron/stock_opname_view.xml',
 	],
 	'demo': [
 	],
