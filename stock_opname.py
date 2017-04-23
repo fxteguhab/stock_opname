@@ -120,7 +120,7 @@ class stock_opname_memory(osv.osv_memory):
 	_columns = {
 		'date': fields.datetime('Date', required=True),
 		'location_id': fields.many2one('stock.location', 'Inventoried Location', required=True),
-		'employee_id': fields.many2one('hr.employee', 'Employee'),
+		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 		'rule_id': fields.many2one('stock.opname.rule', 'Rule'),
 		'line_ids': fields.one2many('stock.opname.memory.line', 'stock_opname_memory_id', 'Inventories', help="Inventory Lines."),
 	}
