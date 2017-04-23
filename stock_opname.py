@@ -25,8 +25,24 @@ class stock_opname_rule(osv.osv):
 	
 	_defaults = {
 		'is_used': False,
-		'algorithm': "def generate_stock_opname_products():\n	return [{'product_id':1}]",
 		'max_item_count': 1,
+		'algorithm':"""def generate_stock_opname_products(self, cr, uid):
+	product_obj = self.pool.get('product.product')
+	today = datetime.now()
+	last_week = today - timedelta(days=7)
+	last_month = today - timedelta(days=30)
+	
+	product_ids = product_obj.search(cr, uid, [
+		'&', ('last_sale', '>', last_month.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+		'&', ('last_sale', '<', today.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+		'|', ('latest_inventory_adjustment_date', '=', None),
+		('latest_inventory_adjustment_date', '<', last_week.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+	], order='last_sale DESC')
+	
+	stock_opname_products = []
+	for product_id in product_ids:
+		stock_opname_products.append({'product_id': product_id})
+	return stock_opname_products""",
 	}
 	
 	# CONSTRAINT ------------------------------------------------------------------------------------------------------------
@@ -192,8 +208,8 @@ class stock_opname_memory(osv.osv_memory):
 				try:
 					exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
-					rule_products = generate_stock_opname_products()
-				except:
+					rule_products = generate_stock_opname_products(self, cr, uid)
+				except Exception as ex:
 					raise osv.except_orm(_('Generating Stock Opname Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
 				line_ids_from_rule = []
@@ -232,6 +248,7 @@ class stock_opname_memory(osv.osv_memory):
 	# ACTIONS ---------------------------------------------------------------------------------------------------------------
 	
 	def action_generate_stock_opname(self, cr, uid, ids, context=None):
+		product_obj = self.pool.get('product.product')
 		stock_opname_obj = self.pool.get('stock.inventory')
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
@@ -248,6 +265,10 @@ class stock_opname_memory(osv.osv_memory):
 					'product_qty': line.product_qty,
 					'is_inject': is_inject,
 				}))
+				product_obj.write(cr, uid, line.product_id.id, {
+					'latest_inventory_adjustment_date': today,
+					'latest_inventory_adjustment_employee_id': memory.employee_id.id if memory.employee_id else None,
+				})
 				if is_inject:
 					stock_opname_inject_obj.write(cr, uid, [line.inject_id.id], {"active": False}, context)
 			
