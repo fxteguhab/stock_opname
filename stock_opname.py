@@ -254,6 +254,7 @@ class stock_opname_memory(osv.osv_memory):
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
 		today = datetime.now()
+		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
 			memory_line_id = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
 			line_ids = []
@@ -285,7 +286,13 @@ class stock_opname_memory(osv.osv_memory):
 				'location_id': memory.location_id.id,
 				'line_ids': line_ids,
 			}
-			stock_opname_obj.create(cr, uid, stock_opname, context)
+			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
+		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
+		if len(stock_inventory_ids) == 1:
+			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
+		else:
+			action.update({"views": [[False, "tree"], [False, "form"]], "domain": [["id", "in", stock_inventory_ids]]})
+		return action
 
 # ---------------------------------------------------------------------------------------------------------------------------
 
