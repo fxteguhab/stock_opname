@@ -137,7 +137,10 @@ class stock_opname_memory(osv.osv_memory):
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
 	
-	def onchange_location_id(self, cr, uid, ids, location_id, context=None):
+	def onchange_location_id(self, cr, uid, ids, location_id, rule_id, context=None):
+		if not rule_id:
+			raise osv.except_orm(_('Generating Stock Opname Error'),
+				_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 		line_ids = []
 		stock_location_obj = self.pool.get('stock.location')
 		if location_id:
@@ -236,8 +239,7 @@ class stock_opname_memory(osv.osv_memory):
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_rule_ids = rule_obj.search(cr, uid, [('is_used', '=', True)])
 			if len(active_rule_ids) == 0:
-				raise osv.except_orm(_('Generating Stock Opname Error'),
-					_('There is no Stock Opname Rule marked as being used.'))
+				return 0
 			return active_rule_ids[0]
 		else:
 			return 0
@@ -252,6 +254,9 @@ class stock_opname_memory(osv.osv_memory):
 		today = datetime.now()
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
+			if not memory.rule_id:
+				raise osv.except_orm(_('Generating Stock Opname Error'),
+					_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 			memory_line = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
 			line_ids = []
 			for line in memory_line:

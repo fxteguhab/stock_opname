@@ -69,7 +69,7 @@
 				<form>
 					<group>
 						<field name="date"/>
-						<field name="location_id" on_change="onchange_location_id(location_id)"/>
+						<field name="location_id" on_change="onchange_location_id(location_id, rule_id)"/>
 						<field name="employee_id"/>
 						<field name="rule_id" invisible="1"/>
 						<field name="line_ids">
