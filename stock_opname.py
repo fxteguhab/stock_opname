@@ -252,9 +252,11 @@ class stock_opname_memory(osv.osv_memory):
 		today = datetime.now()
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
-			memory_line_id = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
+			memory_line = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
 			line_ids = []
-			for line in memory_line_id:
+			for line in memory_line:
+				if line.product_id.type != 'product':
+					raise osv.except_osv(_('Invalid Product Type'), _('One or more product is not a stockable product'))
 				is_inject = True if line.inject_id else False
 				line_ids.append((0, False, {
 					'location_id': line.location_id.id,
