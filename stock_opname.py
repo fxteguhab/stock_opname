@@ -194,9 +194,7 @@ class stock_opname_memory(osv.osv_memory):
 					product_ids_taken.append(inject.product_id)
 					line_ids_from_inject.append({
 						'location_id': location.id,
-						'product_uom_id': product_uom.id,
 						'product_id': inject.product_id,
-						'theoretical_qty': theoretical_qty,
 						'inject_id': inject.id,
 					})
 				elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
@@ -225,9 +223,7 @@ class stock_opname_memory(osv.osv_memory):
 						product_ids_taken.append(product)
 						line_ids_from_rule.append({
 							'location_id': location.id,
-							'product_uom_id': product_uom.id,
 							'product_id': product,
-							'theoretical_qty': theoretical_qty,
 						})
 					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(product_ids_taken) == maximum_item_count:
 						break
@@ -263,7 +259,6 @@ class stock_opname_memory(osv.osv_memory):
 				line_ids.append((0, False, {
 					'location_id': line.location_id.id,
 					'product_id': line.product_id.id,
-					'product_uom_id': line.product_uom_id.id,
 					'is_inject': is_inject,
 				}))
 				product_obj.write(cr, uid, line.product_id.id, {
@@ -305,16 +300,11 @@ class stock_opname_memory_line(osv.osv_memory):
 		'stock_opname_memory_id': fields.many2one('stock.opname.memory', 'Stock Opname Memory'),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
 		'location_id': fields.many2one('stock.location', 'Location', required=True),
-		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
-		'theoretical_qty': fields.float('Theoretical Quantity', required=True,
-			digits_compute=dp.get_precision('Product Unit of Measure')),
 		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
 	}
 	
 	_defaults = {
-		'theoretical_qty': 0,
-		'product_uom_id': lambda self, cr, uid, ctx=None: self.pool['ir.model.data'].get_object_reference(cr, uid,
-			'product', 'product_uom_unit')[1]
+		'inject_id': False,
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
