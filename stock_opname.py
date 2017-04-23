@@ -156,13 +156,6 @@ class stock_opname_memory(osv.osv_memory):
 			active_rule_id = self._get_rule_id(cr, uid, context)
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_rule = rule_obj.browse(cr, uid, active_rule_id)
-			try:
-				exec active_rule.algorithm
-			# noinspection PyUnresolvedReferences
-				rule_products = generate_stock_opname_products()
-			except:
-				raise osv.except_orm(_('Generating Stock Opname Error'),
-					_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
 			
 		# Process the rule with product_ids in inject if any
 			line_ids = []
@@ -173,7 +166,7 @@ class stock_opname_memory(osv.osv_memory):
 			
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
-			inject_ids = stock_opname_inject_obj.search(cr, uid, [], order='priority ASC, id ASC')
+			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True)], order='priority ASC, id ASC')
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
 				product = inject.product_id
 				product_uom = inject.product_id.uom_id
@@ -194,25 +187,35 @@ class stock_opname_memory(osv.osv_memory):
 			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
-			line_ids_from_rule = []
-			product_obj = self.pool.get('product.product')
-			for product in rule_products:
-				product = product_obj.browse(cr, uid, [product['product_id']])
-				product_uom = product.uom_id
-				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
-				if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-						product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
-					total_qty += theoretical_qty
-					product_ids_taken.append(product)
-					line_ids_from_rule.append({
-						'location_id': location.id,
-						'product_uom_id': product_uom.id,
-						'product_id': product,
-						'product_qty': theoretical_qty,
-					})
-				elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
-					break
-			line_ids.extend(line_ids_from_rule)
+		# if there are possibilities to add more item
+			if (maximum_qty == 0 or total_qty < maximum_qty) and len(product_ids_taken) < maximum_item_count:
+				try:
+					exec active_rule.algorithm
+					# noinspection PyUnresolvedReferences
+					rule_products = generate_stock_opname_products()
+				except:
+					raise osv.except_orm(_('Generating Stock Opname Error'),
+						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
+				line_ids_from_rule = []
+				product_obj = self.pool.get('product.product')
+				for product in rule_products:
+					product = product_obj.browse(cr, uid, [product['product_id']])
+					product_uom = product.uom_id
+					theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
+					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
+							product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
+						total_qty += theoretical_qty
+						product_ids_taken.append(product)
+						line_ids_from_rule.append({
+							'location_id': location.id,
+							'product_uom_id': product_uom.id,
+							'product_id': product,
+							'product_qty': theoretical_qty,
+						})
+					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(product_ids_taken) == maximum_item_count:
+						break
+				line_ids.extend(line_ids_from_rule)
+			
 			return line_ids
 	
 	def _get_rule_id(self, cr, uid, context=None):
