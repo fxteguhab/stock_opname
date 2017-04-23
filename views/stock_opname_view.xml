@@ -55,7 +55,7 @@
 			<field name="model">stock.opname.inject</field>
 			<field name="arch" type="xml">
 				<tree editable="bottom">
-					<field name="product_id" />
+					<field name="product_id" domain="[('type','=','product')]" />
 					<field name="priority"/>
 				</tree>
 			</field>
