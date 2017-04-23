@@ -78,7 +78,7 @@
 										domain="[('id', 'child_of', parent.location_id)]"/>
 								<field name="product_id" domain="[('type','=','product')]" />
 								<field name="product_uom_id"/>
-								<field name="product_qty"/>
+								<field name="theoretical_qty"/>
 								<field name="inject_id" invisible="1"/>
 							</tree>
 						</field>
