@@ -13,7 +13,7 @@ class stock_opname_rule(osv.osv):
 		'name': fields.char('Rule Name', required=True, translate=True),
 		'is_used': fields.boolean('Is Used'),
 		'algorithm': fields.text('Algorithm', required=True),
-		'expiration_time_length': fields.float('Expiration Time Length', required=True,
+		'expiration_time_length': fields.float('Expiration Time(Hours)', required=True,
 			help='Validity length in hours before a stock opname expires'),
 		'max_item_count': fields.integer('Maximum Item Count', required=True,
 			help='Maximum item type taken per stock opname'),
@@ -35,6 +35,7 @@ class stock_opname_rule(osv.osv):
 	product_ids = product_obj.search(cr, uid, [
 		'&', ('last_sale', '>', last_month.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
 		'&', ('last_sale', '<', today.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+		'&', ('type', '=', 'product'),
 		'|', ('latest_inventory_adjustment_date', '=', None),
 		('latest_inventory_adjustment_date', '<', last_week.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
 	], order='last_sale DESC')
@@ -313,9 +314,5 @@ class stock_opname_memory_line(osv.osv_memory):
 	_defaults = {
 		'inject_id': False,
 	}
-	
-	# OVERRIDES -------------------------------------------------------------------------------------------------------------
-	
-	
 	
 # ---------------------------------------------------------------------------------------------------------------------------
