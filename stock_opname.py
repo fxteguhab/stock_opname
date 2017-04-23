@@ -132,6 +132,7 @@ class stock_opname_memory(osv.osv_memory):
 	
 	_defaults = {
 		'rule_id': _rule_id,
+		'date': lambda self, cr, uid, context: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 	}
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
