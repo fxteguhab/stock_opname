@@ -14,6 +14,39 @@ class stock_inventory(osv.osv):
 		'expiration_date': fields.datetime('Expiration Date'),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 	}
+	
+	# OVERRIDES -------------------------------------------------------------------------------------------------------------
+	
+	def action_done(self, cr, uid, ids, context=None):
+		result = super(stock_inventory, self).action_done(cr, uid, ids, context=context)
+		product_obj = self.pool.get('product.product')
+		inventory_line_obj = self.pool.get('stock.inventory.line')
+		for inv in self.browse(cr, uid, ids, context=context):
+			for line in inventory_line_obj.browse(cr, uid, inv.line_ids, context=context).ids:
+				product_obj.write(cr, uid, line.product_id.id, {
+					'latest_inventory_adjustment_date': datetime.now(),
+					'latest_inventory_adjustment_employee_id': inv.employee_id.id,
+				})
+		return result
+	
+	def action_cancel_inventory(self, cr, uid, ids, context=None):
+		""" Cancels the stock move and change inventory state to done.
+		Also, make injected lines back to active.
+        @return: True
+        """
+		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
+		for inv in self.browse(cr, uid, ids, context=context):
+			self.pool.get('stock.move').action_cancel(cr, uid, [x.id for x in inv.move_ids], context=context)
+			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
+			for line in inv.line_ids:
+				if line.is_inject:
+					for inject_id in stock_opname_inject_obj.search(cr, uid,
+							[('product_id', '=', line.product_id.id), ('active', '=', False)]):
+						stock_opname_inject_obj.write(cr, uid, inject_id, {
+							'active': True,
+						})
+						break
+		return True
 
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
 
