@@ -36,23 +36,12 @@ class stock_inventory(osv.osv):
         """
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		for inv in self.browse(cr, uid, ids, context=context):
-			self.pool.get('stock.move').action_cancel(cr, uid, [x.id for x in inv.move_ids], context=context)
-			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
 			for line in inv.line_ids:
-				if line.is_inject:
-					for inject_id in stock_opname_inject_obj.search(cr, uid,
-							[('product_id', '=', line.product_id.id), ('active', '=', False)]):
-						stock_opname_inject_obj.write(cr, uid, inject_id, {
-							'active': True,
-						})
-						break
-		return True
-
-	# OVERRIDES -------------------------------------------------------------------------------------------------------------
-
-	def action_cancel_inventory(self, cr, uid, ids, context=None):
-		for inv in self.browse(cr, uid, ids, context=context):
-			self.write(cr, uid, [inv.id], {'line_ids': [(2,)]}, context=context)
+				if line.inject_id:
+					stock_opname_inject_obj.write(cr, uid, line.inject_id.id, {'active': True})
+					break
+			for line in inv.line_ids:
+				self.write(cr, uid, [inv.id], {'line_ids': [(2,line.id)]}, context=context)
 			self.pool.get('stock.move').action_cancel(cr, uid, [x.id for x in inv.move_ids], context=context)
 			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
 		return True
@@ -82,7 +71,7 @@ class stock_inventory_line(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'is_inject': fields.boolean('Is Inject?'),
+		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
 	}
 
 # ==========================================================================================================================

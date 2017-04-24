@@ -265,11 +265,10 @@ class stock_opname_memory(osv.osv_memory):
 			for line in memory_line:
 				if line.product_id.type != 'product':
 					raise osv.except_osv(_('Invalid Product Type'), _('One or more product is not a stockable product'))
-				is_inject = True if line.inject_id else False
 				vals = {
 					'location_id': line.location_id.id,
 					'product_id': line.product_id.id,
-					'is_inject': is_inject,
+					'inject_id': line.inject_id.id,
 				}
 				if is_override:
 					vals.update({
@@ -277,7 +276,7 @@ class stock_opname_memory(osv.osv_memory):
 						'product_qty': line.product_qty,
 					})
 				line_ids.append((0, False, vals))
-				if is_inject:
+				if line.inject_id:
 					stock_opname_inject_obj.write(cr, uid, [line.inject_id.id], {"active": False}, context)
 			
 			memory_hour = int(memory.rule_id.expiration_time_length)
