@@ -138,8 +138,8 @@ class stock_opname_memory(osv.osv_memory):
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
 	
-	def onchange_location_id(self, cr, uid, ids, location_id, rule_id, context=None):
-		if not rule_id:
+	def onchange_location_id(self, cr, uid, ids, location_id, rule_id, context={}):
+		if not context.get('is_override', False) and not rule_id:
 			raise osv.except_orm(_('Generating Stock Opname Error'),
 				_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 		line_ids = []
@@ -248,6 +248,9 @@ class stock_opname_memory(osv.osv_memory):
 	# ACTIONS ---------------------------------------------------------------------------------------------------------------
 	
 	def action_generate_stock_opname(self, cr, uid, ids, context=None):
+		if context is None:
+			context = {}
+		is_override =context.get('is_override', False)
 		product_obj = self.pool.get('product.product')
 		stock_opname_obj = self.pool.get('stock.inventory')
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
@@ -255,7 +258,7 @@ class stock_opname_memory(osv.osv_memory):
 		today = datetime.now()
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
-			if not memory.rule_id:
+			if not is_override and not memory.rule_id:
 				raise osv.except_orm(_('Generating Stock Opname Error'),
 					_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 			memory_line = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
@@ -264,11 +267,17 @@ class stock_opname_memory(osv.osv_memory):
 				if line.product_id.type != 'product':
 					raise osv.except_osv(_('Invalid Product Type'), _('One or more product is not a stockable product'))
 				is_inject = True if line.inject_id else False
-				line_ids.append((0, False, {
+				vals = {
 					'location_id': line.location_id.id,
 					'product_id': line.product_id.id,
 					'is_inject': is_inject,
-				}))
+				}
+				if is_override:
+					vals.update({
+						'product_uom_id': line.product_uom_id.id,
+						'product_qty': line.product_qty,
+					})
+				line_ids.append((0, False, vals))
 				product_obj.write(cr, uid, line.product_id.id, {
 					'latest_inventory_adjustment_date': today,
 					'latest_inventory_adjustment_employee_id': memory.employee_id.id if memory.employee_id else None,
@@ -294,7 +303,7 @@ class stock_opname_memory(osv.osv_memory):
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
 		else:
-			action.update({"views": [[False, "tree"], [False, "form"]], "domain": [["id", "in", stock_inventory_ids]]})
+			action.update({"views": [[False, "tree"], [False, "form"]], "domain": [("id", "in", stock_inventory_ids)]})
 		return action
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -308,10 +317,15 @@ class stock_opname_memory_line(osv.osv_memory):
 		'stock_opname_memory_id': fields.many2one('stock.opname.memory', 'Stock Opname Memory'),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
 		'location_id': fields.many2one('stock.location', 'Location', required=True),
+		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
+		'product_qty': fields.float('Checked Quantity', digits_compute=dp.get_precision('Product Unit of Measure')),
 		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
 	}
 	
 	_defaults = {
+		'product_qty': 0,
+		'product_uom_id': lambda self, cr, uid, ctx=None: self.pool['ir.model.data'].get_object_reference(cr, uid,
+			'product', 'product_uom_unit')[1],
 		'inject_id': False,
 	}
 	

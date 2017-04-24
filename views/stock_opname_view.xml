@@ -77,6 +77,10 @@
 								<field name="location_id" options="{'no_create': 1}"
 										domain="[('id', 'child_of', parent.location_id)]"/>
 								<field name="product_id" domain="[('type','=','product')]" />
+								<field name="product_uom_id" invisible="not context.get('is_override', False)"
+										required="context.get('is_override', False)"/>
+								<field name="product_qty" invisible="not context.get('is_override', False)"
+										required="context.get('is_override', False)"/>
 								<field name="inject_id" invisible="1"/>
 							</tree>
 						</field>
