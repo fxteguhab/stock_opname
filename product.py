@@ -24,6 +24,8 @@ class product_template(osv.osv):
 			if len(ordered_sale_order_ids) > 0:
 				last_sale_order = sale_order_obj.browse(cr, uid, ordered_sale_order_ids[0])
 				result[id] = last_sale_order.date_order
+			else:
+				result[id] = None
 		return result
 	
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
