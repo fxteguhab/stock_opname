@@ -251,7 +251,6 @@ class stock_opname_memory(osv.osv_memory):
 		if context is None:
 			context = {}
 		is_override =context.get('is_override', False)
-		product_obj = self.pool.get('product.product')
 		stock_opname_obj = self.pool.get('stock.inventory')
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
@@ -278,10 +277,6 @@ class stock_opname_memory(osv.osv_memory):
 						'product_qty': line.product_qty,
 					})
 				line_ids.append((0, False, vals))
-				product_obj.write(cr, uid, line.product_id.id, {
-					'latest_inventory_adjustment_date': today,
-					'latest_inventory_adjustment_employee_id': memory.employee_id.id if memory.employee_id else None,
-				})
 				if is_inject:
 					stock_opname_inject_obj.write(cr, uid, [line.inject_id.id], {"active": False}, context)
 			
