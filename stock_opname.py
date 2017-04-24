@@ -33,16 +33,23 @@ class stock_opname_rule(osv.osv):
 	last_month = today - timedelta(days=30)
 	
 	product_ids = product_obj.search(cr, uid, [
-		'&', ('last_sale', '>', last_month.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
-		'&', ('last_sale', '<', today.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
 		'&', ('type', '=', 'product'),
 		'|', ('latest_inventory_adjustment_date', '=', None),
 		('latest_inventory_adjustment_date', '<', last_week.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
-	], order='last_sale DESC')
+	])
+	
+	filtered_products = []
+	products = product_obj.browse(cr, uid, product_ids)
+	products = products.sorted(key=lambda p: p.last_sale)
+	for product in products:
+		if product.last_sale:
+			last_sale = datetime.strptime(product.last_sale, DEFAULT_SERVER_DATETIME_FORMAT)
+			if last_month < last_sale and last_sale < today:
+				filtered_products.append(product)
 	
 	stock_opname_products = []
-	for product_id in product_ids:
-		stock_opname_products.append({'product_id': product_id})
+	for filtered_product in filtered_products:
+		stock_opname_products.append({'product_id': filtered_product.id})
 	return stock_opname_products""",
 	}
 	
