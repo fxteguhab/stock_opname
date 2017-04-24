@@ -15,6 +15,15 @@ class stock_inventory(osv.osv):
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 	}
 
+	# OVERRIDES -------------------------------------------------------------------------------------------------------------
+
+	def action_cancel_inventory(self, cr, uid, ids, context=None):
+		for inv in self.browse(cr, uid, ids, context=context):
+			self.write(cr, uid, [inv.id], {'line_ids': [(2,)]}, context=context)
+			self.pool.get('stock.move').action_cancel(cr, uid, [x.id for x in inv.move_ids], context=context)
+			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
+		return True
+	
 	# CRON ------------------------------------------------------------------------------------------------------------------
 	
 	def cron_autocancel_expired_stock_opname(self, cr, uid, context=None):
