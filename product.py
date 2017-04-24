@@ -3,13 +3,13 @@ from datetime import datetime, timedelta
 
 # ==========================================================================================================================
 
-class product_product(osv.osv):
+class product_template(osv.osv):
 	
-	_inherit = 'product.product'
+	_inherit = 'product.template'
 	
 	# METHODS ---------------------------------------------------------------------------------------------------------------
 	
-	def _get_last_sale(self, cr, uid):
+	def _get_last_sale(self, cr, uid, ids, name, args, context=None):
 		return None
 	
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------

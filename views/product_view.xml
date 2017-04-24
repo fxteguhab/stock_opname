@@ -1,0 +1,40 @@
+<openerp>
+	<data>
+		<!--<record model="ir.ui.view" id="product_template_form_inherit">-->
+			<!--<field name="name">product.template.common.form.inherit</field>-->
+			<!--<field name="model">product.template</field>-->
+			<!--<field name="inherit_id" ref="product.product_template_only_form_view"/>-->
+			<!--<field name="arch" type="xml">-->
+				<!--<notebook position="inside">-->
+					<!--<page string="Last Last">-->
+						<!--<field name="latest_inventory_adjustment_date"/>-->
+						<!--<field name="latest_inventory_adjustment_employee_id"/>-->
+						<!--<field name="last_sale"/>-->
+					<!--</page>-->
+				<!--</notebook>-->
+				<!--&lt;!&ndash;<field name="product_manager" position="after">&ndash;&gt;-->
+					<!--&lt;!&ndash;<field name="latest_inventory_adjustment_date"/>&ndash;&gt;-->
+					<!--&lt;!&ndash;<field name="latest_inventory_adjustment_employee_id"/>&ndash;&gt;-->
+				<!--&lt;!&ndash;</field>&ndash;&gt;-->
+				<!--&lt;!&ndash;<field name="sale_delay" position="after">&ndash;&gt;-->
+					<!--&lt;!&ndash;<field name="last_sale"/>&ndash;&gt;-->
+				<!--&lt;!&ndash;</field>&ndash;&gt;-->
+			<!--</field>-->
+		<!--</record>-->
+		<record model="ir.ui.view" id="product_template_supplier_form_inherit">
+			<field name="name">product.template.supplier.form.inherit</field>
+			<field name="model">product.template</field>
+			<field name="priority">17</field>
+			<field name="inherit_id" ref="product.product_template_form_view"/>
+			<field name="arch" type="xml">
+				<div name="options" position="inside">
+					<div>
+						<field name="latest_inventory_adjustment_date"/>
+						<field name="latest_inventory_adjustment_employee_id"/>
+						<field name="last_sale"/>
+					</div>
+				</div>
+			</field>
+		</record>
+	</data>
+</openerp>
