@@ -21,38 +21,6 @@ class stock_opname_rule(osv.osv):
 			help='Maximum total quantity per stock opname'),
 	}
 	
-	# DEFAULTS --------------------------------------------------------------------------------------------------------------
-	
-	_defaults = {
-		'is_used': False,
-		'max_item_count': 1,
-		'algorithm':"""def generate_stock_opname_products(self, cr, uid):
-	product_obj = self.pool.get('product.product')
-	today = datetime.now()
-	last_week = today - timedelta(days=7)
-	last_month = today - timedelta(days=30)
-	
-	product_ids = product_obj.search(cr, uid, [
-		'&', ('type', '=', 'product'),
-		'|', ('latest_inventory_adjustment_date', '=', None),
-		('latest_inventory_adjustment_date', '<', last_week.strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
-	])
-	
-	filtered_products = []
-	products = product_obj.browse(cr, uid, product_ids)
-	products = products.sorted(key=lambda p: p.last_sale)
-	for product in products:
-		if product.last_sale:
-			last_sale = datetime.strptime(product.last_sale, DEFAULT_SERVER_DATETIME_FORMAT)
-			if last_month < last_sale and last_sale < today:
-				filtered_products.append(product)
-	
-	stock_opname_products = []
-	for filtered_product in filtered_products:
-		stock_opname_products.append({'product_id': filtered_product.id})
-	return stock_opname_products""",
-	}
-	
 	# CONSTRAINT ------------------------------------------------------------------------------------------------------------
 	
 	_sql_constraints = [
@@ -96,9 +64,7 @@ class stock_opname_rule(osv.osv):
 					self.write(cr, uid, [rule.id], {'is_used': True}, context)
 		return result
 
-
 # ---------------------------------------------------------------------------------------------------------------------------
-
 
 class stock_opname_inject(osv.osv):
 	_name = "stock.opname.inject"
@@ -120,7 +86,6 @@ class stock_opname_inject(osv.osv):
 
 # ---------------------------------------------------------------------------------------------------------------------------
 
-
 class stock_opname_memory(osv.osv_memory):
 	_name = "stock.opname.memory"
 	_description = "Stock opname memory"
@@ -135,11 +100,11 @@ class stock_opname_memory(osv.osv_memory):
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
 	
-	def _rule_id(self, cr, uid, context=None):
+	def _default_rule_id(self, cr, uid, context=None):
 		return self._get_rule_id(cr, uid, context)
 	
 	_defaults = {
-		'rule_id': _rule_id,
+		'rule_id': _default_rule_id,
 		'date': lambda self, cr, uid, context: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 	}
 	
@@ -152,7 +117,7 @@ class stock_opname_memory(osv.osv_memory):
 		line_ids = []
 		stock_location_obj = self.pool.get('stock.location')
 		if location_id:
-			location = stock_location_obj.browse(cr, uid, [location_id])
+			location = stock_location_obj.browse(cr, uid, location_id)
 			line_ids = self._get_line_ids(cr, uid, location, context)
 		return {'value': {'line_ids': line_ids}}
 	
@@ -198,6 +163,8 @@ class stock_opname_memory(osv.osv_memory):
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
 				product = inject.product_id
 				product_uom = inject.product_id.uom_id
+			# JUNED: untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
+			# maximum_item_count tetap diperiksa, though...
 				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
 				if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
 						inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
@@ -224,6 +191,9 @@ class stock_opname_memory(osv.osv_memory):
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
 				line_ids_from_rule = []
 				product_obj = self.pool.get('product.product')
+			# JUNED: awas, di sini belum memperhitungkan fakta bahwa ketika algo ini dipanggil sudah ada 
+			# produk yang lagi pending SO. lihat subbab "Ide tentang pool produk SO"
+			# mungkin di awal product_ids_taken sudah diisi dulu dengan seluruh produk yang lagi pending SO?
 				for product in rule_products:
 					product = product_obj.browse(cr, uid, [product['product_id']])
 					product_uom = product.uom_id
@@ -242,15 +212,16 @@ class stock_opname_memory(osv.osv_memory):
 			
 			return line_ids
 	
-	def _get_rule_id(self, cr, uid, context=None):
-		if context is None or (context is not None and not context.get('is_override', False)):
+	def _get_rule_id(self, cr, uid, context={}):
+		context = context and context or {}
+		if not context.get('is_override', False):
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_rule_ids = rule_obj.search(cr, uid, [('is_used', '=', True)])
 			if len(active_rule_ids) == 0:
-				return 0
+				return None
 			return active_rule_ids[0]
 		else:
-			return 0
+			return None
 	
 	# ACTIONS ---------------------------------------------------------------------------------------------------------------
 	
@@ -265,17 +236,17 @@ class stock_opname_memory(osv.osv_memory):
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
 			if not is_override and not memory.rule_id:
-				raise osv.except_orm(_('Generating Stock Opname Error'),
+				raise osv.except_osv(_('Stock Opname Error'),
 					_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 			memory_line = stock_opname_memory_line_obj.browse(cr, uid, memory.line_ids.ids)
 			line_ids = []
 			for line in memory_line:
 				if line.product_id.type != 'product':
-					raise osv.except_osv(_('Invalid Product Type'), _('One or more product is not a stockable product'))
+					raise osv.except_osv(_('Invalid Product Type'), _('One or more products is not a stockable product.'))
 				vals = {
 					'location_id': line.location_id.id,
 					'product_id': line.product_id.id,
-					'inject_id': line.inject_id.id,
+					'inject_id': line.inject_id and line.inject_id.id or None,
 				}
 				if is_override:
 					vals.update({
@@ -289,17 +260,23 @@ class stock_opname_memory(osv.osv_memory):
 			memory_hour = int(memory.rule_id.expiration_time_length)
 			memory_minute = (memory.rule_id.expiration_time_length - memory_hour) * 60
 			stock_opname = {
-				'name': 'SO ' + today.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-				'state': 'confirm' if memory.rule_id.id else 'done',
+				'name': 'SO %s %s' % (memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+				'state': 'confirm', # if memory.rule_id.id else 'done',
 				'date': memory.date,
-				'expiration_date': (datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT)
-									+ timedelta(hours=memory_hour) + timedelta(minutes=memory_minute))
-					.strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+				'expiration_date': (
+					datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT) + 
+					timedelta(hours=memory_hour) + 
+					timedelta(minutes=memory_minute)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id if memory.employee_id else None,
 				'location_id': memory.location_id.id,
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
+	# JUNED: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias 
+	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat 
+	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
+		if is_override:
+			stock_opname_obj.action_done(cr, uid, stock_inventory_ids)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
@@ -308,7 +285,6 @@ class stock_opname_memory(osv.osv_memory):
 		return action
 
 # ---------------------------------------------------------------------------------------------------------------------------
-
 
 class stock_opname_memory_line(osv.osv_memory):
 	_name = "stock.opname.memory.line"

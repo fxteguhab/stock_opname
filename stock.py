@@ -11,7 +11,7 @@ class stock_inventory(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'expiration_date': fields.datetime('Expiration Date'),
+		'expiration_date': fields.datetime('Expiration Date', readonly=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 	}
 	
@@ -25,7 +25,7 @@ class stock_inventory(osv.osv):
 			for line in inventory_line_obj.browse(cr, uid, inv.line_ids, context=context).ids:
 				product_obj.write(cr, uid, line.product_id.id, {
 					'latest_inventory_adjustment_date': datetime.now(),
-					'latest_inventory_adjustment_employee_id': inv.employee_id.id,
+					'latest_inventory_adjustment_employee_id': inv.employee_id and inv.employee_id.id or None,
 				})
 		return result
 	

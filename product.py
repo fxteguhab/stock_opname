@@ -11,6 +11,7 @@ class product_template(osv.osv):
 	# METHODS ---------------------------------------------------------------------------------------------------------------
 	
 	def _get_last_sale(self, cr, uid, ids, name, args, context=None):
+	# JUNED: optimasi dengan cr.execute langsung
 		result = {}
 		sale_order_obj = self.pool.get('sale.order')
 		sale_order_line_obj = self.pool.get('sale.order.line')
@@ -31,8 +32,8 @@ class product_template(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'latest_inventory_adjustment_date': fields.datetime('Latest Inventory Adjustment Date'),
-		'latest_inventory_adjustment_employee_id': fields.many2one('hr.employee', 'Latest Inventory Adjustment Employee'),
+		'latest_inventory_adjustment_date': fields.datetime('Latest Inventory Adjustment Date', readonly=True),
+		'latest_inventory_adjustment_employee_id': fields.many2one('hr.employee', 'Latest Inventory Adjustment Employee', readonly=True),
 		'last_sale': fields.function(_get_last_sale, string="Last Sale", type='datetime', readonly=True, store=False),
 	}
 	
