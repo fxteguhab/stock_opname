@@ -160,23 +160,35 @@ class stock_opname_memory(osv.osv_memory):
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True)], order='priority ASC, id ASC')
+			first = True
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
 				product = inject.product_id
 				product_uom = inject.product_id.uom_id
-			# JUNED: untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
-			# maximum_item_count tetap diperiksa, though...
 				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
-				if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-						inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
-					total_qty += theoretical_qty
-					product_ids_taken.append(inject.product_id)
-					line_ids_from_inject.append({
-						'location_id': location.id,
-						'product_id': inject.product_id,
-						'inject_id': inject.id,
-					})
-				elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
-					break
+			# NIBBLE: untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
+			# maximum_item_count tetap diperiksa, though...
+				if first:
+					if maximum_item_count != 0:
+						total_qty += theoretical_qty
+						product_ids_taken.append(inject.product_id)
+						line_ids_from_inject.append({
+							'location_id': location.id,
+							'product_id': inject.product_id,
+							'inject_id': inject.id,
+						})
+						first = False
+				else:
+					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
+							inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
+						total_qty += theoretical_qty
+						product_ids_taken.append(inject.product_id)
+						line_ids_from_inject.append({
+							'location_id': location.id,
+							'product_id': inject.product_id,
+							'inject_id': inject.id,
+						})
+					elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
+						break
 			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
