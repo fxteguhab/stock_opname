@@ -284,7 +284,7 @@ class stock_opname_memory(osv.osv_memory):
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
-	# JUNED: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias 
+	# NIBBLE: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat 
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
