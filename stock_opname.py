@@ -156,6 +156,15 @@ class stock_opname_memory(osv.osv_memory):
 			maximum_item_count = active_rule.max_item_count
 			total_qty = 0
 			maximum_qty = active_rule.max_total_qty
+		
+		# Insert product ids in Pending SO to product_ids_taken so that it won't be taken again
+			stock_opname_obj = self.pool.get('stock.inventory')
+			pending_so_ids = stock_opname_obj.search(cr, uid, [('location_id', '=', location.id), ('state', '=', 'confirm')])
+			pending_so = stock_opname_obj.browse(cr, uid, pending_so_ids)
+			for so in pending_so:
+				for line in so.line_ids:
+					for product in line.product_id:
+						product_ids_taken.append(product.id)
 			
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
@@ -191,7 +200,7 @@ class stock_opname_memory(osv.osv_memory):
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
 				line_ids_from_rule = []
 				product_obj = self.pool.get('product.product')
-			# JUNED: awas, di sini belum memperhitungkan fakta bahwa ketika algo ini dipanggil sudah ada 
+			# NIBBLE: awas, di sini belum memperhitungkan fakta bahwa ketika algo ini dipanggil sudah ada
 			# produk yang lagi pending SO. lihat subbab "Ide tentang pool produk SO"
 			# mungkin di awal product_ids_taken sudah diisi dulu dengan seluruh produk yang lagi pending SO?
 				for product in rule_products:
@@ -272,7 +281,7 @@ class stock_opname_memory(osv.osv_memory):
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
-	# JUNED: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias 
+	# NIBBLE: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat 
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
