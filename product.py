@@ -11,22 +11,20 @@ class product_template(osv.osv):
 	# METHODS ---------------------------------------------------------------------------------------------------------------
 	
 	def _get_last_sale(self, cr, uid, ids, name, args, context=None):
-	# JUNED: optimasi dengan cr.execute langsung
+	# NIBBLE: DONE! Optimasi dengan cr.execute langsung
 		result = {}
-		sale_order_obj = self.pool.get('sale.order')
-		sale_order_line_obj = self.pool.get('sale.order.line')
 		for id in ids:
-			sale_order_line_ids = sale_order_line_obj.search(cr, uid, [('product_id', '=', id)])
-			sale_order_ids = []
-			for sale_order_line_id in sale_order_line_ids:
-				sale_order_line = sale_order_line_obj.browse(cr, uid, sale_order_line_id)
-				sale_order_ids.append(sale_order_line.order_id.id)
-			ordered_sale_order_ids = sale_order_obj.search(cr, uid, [('id', 'in', sale_order_ids)], order='date_order DESC')
-			if len(ordered_sale_order_ids) > 0:
-				last_sale_order = sale_order_obj.browse(cr, uid, ordered_sale_order_ids[0])
-				result[id] = last_sale_order.date_order
-			else:
-				result[id] = None
+			cr.execute("""
+			SELECT so.date_order, so.id
+			FROM sale_order_line so_line
+				LEFT JOIN sale_order so
+					ON so.id = so_line.order_id
+			WHERE so_line.product_id = %d
+			ORDER BY date_order DESC
+			LIMIT 1
+			""" % id)
+			for row in cr.dictfetchall():
+				result[id] = row['date_order']
 		return result
 	
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
