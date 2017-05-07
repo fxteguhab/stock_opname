@@ -290,6 +290,7 @@ class stock_opname_memory(osv.osv_memory):
 					timedelta(minutes=memory_minute)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id if memory.employee_id else None,
 				'location_id': memory.location_id.id,
+				'is_override': True,
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
