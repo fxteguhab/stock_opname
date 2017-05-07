@@ -71,6 +71,7 @@ class stock_opname_inject(osv.osv):
 	_description = "Stock opname inject"
 	
 	_columns = {
+		'location_id': fields.many2one('stock.location', 'Location', required=True, select=True),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
 		'priority': fields.selection([(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5'), (6, '6')], 'Priority',
 			required=True),
@@ -168,7 +169,7 @@ class stock_opname_memory(osv.osv_memory):
 			
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
-			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True)], order='priority ASC, id ASC')
+			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True), ('location_id', '=', location.id)], order='priority ASC, id ASC')
 			first = True
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
 				product = inject.product_id
@@ -287,6 +288,7 @@ class stock_opname_memory(osv.osv_memory):
 					timedelta(minutes=memory_minute)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id if memory.employee_id else None,
 				'location_id': memory.location_id.id,
+				'is_override': True,
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
