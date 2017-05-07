@@ -81,6 +81,7 @@ class stock_opname_inject(osv.osv):
 	_description = "Stock opname inject"
 	
 	_columns = {
+		'location_id': fields.many2one('stock.location', 'Location', required=True, select=True),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
 		'priority': fields.selection([(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5'), (6, '6')], 'Priority',
 			required=True),
