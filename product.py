@@ -11,7 +11,6 @@ class product_template(osv.osv):
 	# METHODS ---------------------------------------------------------------------------------------------------------------
 	
 	def _get_last_sale(self, cr, uid, ids, name, args, context=None):
-	# NIBBLE: DONE! Optimasi dengan cr.execute langsung
 		result = {}
 		for id in ids:
 			cr.execute("""

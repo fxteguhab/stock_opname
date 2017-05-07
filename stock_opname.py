@@ -159,7 +159,7 @@ class stock_opname_memory(osv.osv_memory):
 		
 		# Insert product ids in Pending SO to product_ids_taken so that it won't be taken again
 			stock_opname_obj = self.pool.get('stock.inventory')
-			pending_so_ids = stock_opname_obj.search(cr, uid, [('location_id', '=', location.id), ('state', '=', 'confirm')])
+			pending_so_ids = stock_opname_obj.search(cr, uid, [('location_id', '=', location.id), ('state', 'in', ['draft','confirm'])])
 			pending_so = stock_opname_obj.browse(cr, uid, pending_so_ids)
 			for so in pending_so:
 				for line in so.line_ids:
@@ -174,7 +174,7 @@ class stock_opname_memory(osv.osv_memory):
 				product = inject.product_id
 				product_uom = inject.product_id.uom_id
 				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
-			# NIBBLE: untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
+			# untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
 			# maximum_item_count tetap diperiksa, though...
 				if first:
 					if maximum_item_count != 0:
@@ -208,13 +208,10 @@ class stock_opname_memory(osv.osv_memory):
 					# noinspection PyUnresolvedReferences
 					rule_products = generate_stock_opname_products(self, cr, uid)
 				except Exception as ex:
-					raise osv.except_orm(_('Generating Stock Opname Error'),
+					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
 				line_ids_from_rule = []
 				product_obj = self.pool.get('product.product')
-			# NIBBLE: awas, di sini belum memperhitungkan fakta bahwa ketika algo ini dipanggil sudah ada
-			# produk yang lagi pending SO. lihat subbab "Ide tentang pool produk SO"
-			# mungkin di awal product_ids_taken sudah diisi dulu dengan seluruh produk yang lagi pending SO?
 				for product in rule_products:
 					product = product_obj.browse(cr, uid, [product['product_id']])
 					product_uom = product.uom_id
@@ -293,7 +290,7 @@ class stock_opname_memory(osv.osv_memory):
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
-	# NIBBLE: kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
+	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat 
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
