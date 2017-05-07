@@ -13,6 +13,7 @@ class stock_inventory(osv.osv):
 	_columns = {
 		'expiration_date': fields.datetime('Expiration Date', readonly=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
+		'is_override': fields.boolean('Is Override'),
 	}
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
