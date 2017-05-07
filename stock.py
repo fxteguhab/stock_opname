@@ -11,10 +11,41 @@ class stock_inventory(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'expiration_date': fields.datetime('Expiration Date'),
+		'expiration_date': fields.datetime('Expiration Date', readonly=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 	}
-
+	
+	# OVERRIDES -------------------------------------------------------------------------------------------------------------
+	
+	def action_done(self, cr, uid, ids, context=None):
+		result = super(stock_inventory, self).action_done(cr, uid, ids, context=context)
+		product_obj = self.pool.get('product.product')
+		inventory_line_obj = self.pool.get('stock.inventory.line')
+		for inv in self.browse(cr, uid, ids, context=context):
+			for line in inventory_line_obj.browse(cr, uid, inv.line_ids, context=context).ids:
+				product_obj.write(cr, uid, line.product_id.id, {
+					'latest_inventory_adjustment_date': datetime.now(),
+					'latest_inventory_adjustment_employee_id': inv.employee_id and inv.employee_id.id or None,
+				})
+		return result
+	
+	def action_cancel_inventory(self, cr, uid, ids, context=None):
+		""" Cancels the stock move and change inventory state to done.
+		Also, make injected lines back to active.
+        @return: True
+        """
+		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
+		for inv in self.browse(cr, uid, ids, context=context):
+			for line in inv.line_ids:
+				if line.inject_id:
+					stock_opname_inject_obj.write(cr, uid, line.inject_id.id, {'active': True})
+					break
+			for line in inv.line_ids:
+				self.write(cr, uid, [inv.id], {'line_ids': [(2,line.id)]}, context=context)
+			self.pool.get('stock.move').action_cancel(cr, uid, [x.id for x in inv.move_ids], context=context)
+			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
+		return True
+	
 	# CRON ------------------------------------------------------------------------------------------------------------------
 	
 	def cron_autocancel_expired_stock_opname(self, cr, uid, context=None):
@@ -40,7 +71,7 @@ class stock_inventory_line(osv.osv):
 	# COLUMNS ---------------------------------------------------------------------------------------------------------------
 	
 	_columns = {
-		'is_inject': fields.boolean('Is Inject?'),
+		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
 	}
 
 # ==========================================================================================================================

@@ -4,7 +4,7 @@
 			<field name="name">Autocancel expired stock inventory based on expiration_date and today's time</field>
 			<field eval="True" name="active" />
 			<field name="user_id" ref="base.user_root" />
-			<field name="interval_number">30</field>
+			<field name="interval_number">10</field>
 			<field name="interval_type">minutes</field>
 			<field name="numbercall">-1</field>
 			<field name="active">1</field>
