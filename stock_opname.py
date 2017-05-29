@@ -207,7 +207,7 @@ class stock_opname_memory(osv.osv_memory):
 				try:
 					exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
-					rule_products = generate_stock_opname_products(self, cr, uid)
+					rule_products = generate_stock_opname_products(cr, uid)
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
