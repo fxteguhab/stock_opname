@@ -127,7 +127,7 @@ class stock_opname_memory(osv.osv_memory):
 	def _get_theoretical_qty(self, cr, uid, location, product, product_uom, context=None):
 		uom_obj = self.pool.get("product.uom")
 		quant_obj = self.pool.get("stock.quant")
-		# Pool quants
+	# Pool quants
 		args = [
 			# ('company_id', '=', line.company_id.id),
 			('location_id', '=', location.id),
@@ -138,7 +138,7 @@ class stock_opname_memory(osv.osv_memory):
 		]
 		quant_ids = quant_obj.search(cr, uid, args, context=context)
 		quants = quant_obj.browse(cr, uid, quant_ids, context=context)
-		# Calculate theoretical qty
+	# Calculate theoretical qty
 		total_qty = sum([quant.qty for quant in quants])
 		if product_uom and product.uom_id.id != product_uom.id:
 			total_qty = uom_obj._compute_qty_obj(cr, uid, product.uom_id, total_qty, product_uom, context=context)
@@ -146,19 +146,19 @@ class stock_opname_memory(osv.osv_memory):
 	
 	def _get_line_ids(self, cr, uid, location, context=None):
 		if context is None or (context is not None and not context.get('is_override', False)):
-			# Getting the rule first
+		# Getting the rule first
 			active_rule_id = self._get_rule_id(cr, uid, context)
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_rule = rule_obj.browse(cr, uid, active_rule_id)
 			
-			# Process the rule with product_ids in inject if any
+		# Process the rule with product_ids in inject if any
 			line_ids = []
 			product_ids_taken = []
 			maximum_item_count = active_rule.max_item_count
 			total_qty = 0
 			maximum_qty = active_rule.max_total_qty
-			
-			# Insert product ids in Pending SO to product_ids_taken so that it won't be taken again
+		
+		# Insert product ids in Pending SO to product_ids_taken so that it won't be taken again
 			stock_opname_obj = self.pool.get('stock.inventory')
 			pending_so_ids = stock_opname_obj.search(cr, uid, [('location_id', '=', location.id), ('state', 'in', ['draft','confirm'])])
 			pending_so = stock_opname_obj.browse(cr, uid, pending_so_ids)
@@ -175,8 +175,8 @@ class stock_opname_memory(osv.osv_memory):
 				product = inject.product_id
 				product_uom = inject.product_id.uom_id
 				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
-				# untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
-				# maximum_item_count tetap diperiksa, though...
+			# untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
+			# maximum_item_count tetap diperiksa, though...
 				if first:
 					if maximum_item_count != 0:
 						total_qty += theoretical_qty
@@ -189,7 +189,7 @@ class stock_opname_memory(osv.osv_memory):
 						first = False
 				else:
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-									inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
+							inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
 						total_qty += theoretical_qty
 						product_ids_taken.append(inject.product_id)
 						line_ids_from_inject.append({
@@ -201,8 +201,8 @@ class stock_opname_memory(osv.osv_memory):
 						break
 			line_ids.extend(line_ids_from_inject)
 			
-			# Process the rule with the algorithm
-			# if there are possibilities to add more item
+		# Process the rule with the algorithm
+		# if there are possibilities to add more item
 			if (maximum_qty == 0 or total_qty < maximum_qty) and len(product_ids_taken) < maximum_item_count:
 				try:
 					exec active_rule.algorithm
@@ -218,7 +218,7 @@ class stock_opname_memory(osv.osv_memory):
 					product_uom = product.uom_id
 					theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-									product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
+							product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
 						total_qty += theoretical_qty
 						product_ids_taken.append(product)
 						line_ids_from_rule.append({
@@ -247,7 +247,7 @@ class stock_opname_memory(osv.osv_memory):
 	def action_generate_stock_opname(self, cr, uid, ids, context=None):
 		if context is None:
 			context = {}
-		is_override = context.get('is_override', False)
+		is_override =context.get('is_override', False)
 		stock_opname_obj = self.pool.get('stock.inventory')
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
@@ -293,9 +293,9 @@ class stock_opname_memory(osv.osv_memory):
 				'line_ids': line_ids,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
-		# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
-		# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
-		# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
+	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
+	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
+	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
 			stock_opname_obj.action_done(cr, uid, stock_inventory_ids)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
@@ -327,4 +327,4 @@ class stock_opname_memory_line(osv.osv_memory):
 		'inject_id': False,
 	}
 	
-	# ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
