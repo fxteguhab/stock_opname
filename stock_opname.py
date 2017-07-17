@@ -263,7 +263,8 @@ class stock_opname_memory(osv.osv_memory):
 				if line.product_id.type != 'product':
 					raise osv.except_osv(_('Invalid Product Type'), _('One or more products is not a stockable product.'))
 				vals = {
-					'location_id': line.location_id.id,
+					# 'location_id': line.location_id.id,
+					'location_id': memory.location_id.id,
 					'product_id': line.product_id.id,
 					'inject_id': line.inject_id and line.inject_id.id or None,
 				}
@@ -283,8 +284,8 @@ class stock_opname_memory(osv.osv_memory):
 				'state': 'confirm', # if memory.rule_id.id else 'done',
 				'date': memory.date,
 				'expiration_date': (
-					datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT) + 
-					timedelta(hours=memory_hour) + 
+					datetime.strptime(memory.date, DEFAULT_SERVER_DATETIME_FORMAT) +
+					timedelta(hours=memory_hour) +
 					timedelta(minutes=memory_minute)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 				'employee_id': memory.employee_id.id if memory.employee_id else None,
 				'location_id': memory.location_id.id,
@@ -293,7 +294,7 @@ class stock_opname_memory(osv.osv_memory):
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
 	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
-	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat 
+	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
 			stock_opname_obj.action_done(cr, uid, stock_inventory_ids)
@@ -313,7 +314,7 @@ class stock_opname_memory_line(osv.osv_memory):
 	_columns = {
 		'stock_opname_memory_id': fields.many2one('stock.opname.memory', 'Stock Opname Memory'),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
-		'location_id': fields.many2one('stock.location', 'Location', required=True),
+		# 'location_id': fields.many2one('stock.location', 'Location', required=True),
 		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
 		'product_qty': fields.float('Checked Quantity', digits_compute=dp.get_precision('Product Unit of Measure')),
 		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
