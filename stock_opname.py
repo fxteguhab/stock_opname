@@ -166,7 +166,7 @@ class stock_opname_memory(osv.osv_memory):
 				for line in so.line_ids:
 					for product in line.product_id:
 						product_ids_taken.append(product.id)
-			
+		# Handle SO inject
 			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True), ('location_id', '=', location.id)], order='priority ASC, id ASC')
