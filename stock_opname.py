@@ -180,7 +180,7 @@ class stock_opname_memory(osv.osv_memory):
 			# maximum_item_count tetap diperiksa, though...
 				if first:
 					if maximum_item_count != 0:
-						total_qty += theoretical_qty
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(inject.product_id)
 						line_ids_from_inject.append({
 							'location_id': location.id,
@@ -191,7 +191,7 @@ class stock_opname_memory(osv.osv_memory):
 				else:
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
 							inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
-						total_qty += theoretical_qty
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(inject.product_id)
 						line_ids_from_inject.append({
 							'location_id': location.id,
@@ -220,7 +220,7 @@ class stock_opname_memory(osv.osv_memory):
 					theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
 							product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
-						total_qty += theoretical_qty
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(product)
 						line_ids_from_rule.append({
 							'location_id': location.id,
