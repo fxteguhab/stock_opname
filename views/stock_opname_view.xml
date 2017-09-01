@@ -75,8 +75,7 @@
 						<field name="rule_id" invisible="1"/>
 						<field name="line_ids">
 							<tree editable="bottom">
-								<!--<field name="location_id" options="{'no_create': 1}"-->
-										<!--domain="[('id', 'child_of', parent.location_id)]"/>-->
+								<field name="location_id" options="{'no_create': 1'}" />
 								<field name="product_id" domain="[('type','=','product')]" />
 								<field name="product_uom_id" invisible="not context.get('is_override', False)"
 										required="context.get('is_override', False)"/>
