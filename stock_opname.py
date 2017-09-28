@@ -315,7 +315,7 @@ class stock_opname_memory_line(osv.osv_memory):
 	_columns = {
 		'stock_opname_memory_id': fields.many2one('stock.opname.memory', 'Stock Opname Memory'),
 		'product_id': fields.many2one('product.product', 'Product', required=True),
-		# 'location_id': fields.many2one('stock.location', 'Location', required=True),
+		'location_id': fields.many2one('stock.location', 'Location', required=True),
 		'product_uom_id': fields.many2one('product.uom', 'Product Unit of Measure', required=True),
 		'product_qty': fields.float('Checked Quantity', digits_compute=dp.get_precision('Product Unit of Measure')),
 		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
