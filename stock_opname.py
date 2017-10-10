@@ -190,7 +190,7 @@ class stock_opname_memory(osv.osv_memory):
 						first = False
 				else:
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-							inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
+							inject.product_id not in product_ids_taken and len(line_ids) + 1 <= maximum_item_count:
 						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(inject.product_id)
 						line_ids_from_inject.append({
@@ -198,17 +198,18 @@ class stock_opname_memory(osv.osv_memory):
 							'product_id': inject.product_id,
 							'inject_id': inject.id,
 						})
-					elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
+					elif total_qty == maximum_qty or len(line_ids) == maximum_item_count:
 						break
 			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
 		# if there are possibilities to add more item
-			if (maximum_qty == 0 or total_qty < maximum_qty) and len(product_ids_taken) < maximum_item_count:
+			if (maximum_qty == 0 or total_qty < maximum_qty) and len(line_ids) < maximum_item_count:
 				try:
 					exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
 					rule_products = generate_stock_opname_products(self, cr, uid)
+					# rule_products = self.generate_stock_opname_products(cr, uid)
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
@@ -219,14 +220,14 @@ class stock_opname_memory(osv.osv_memory):
 					product_uom = product.uom_id
 					theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-							product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
+							product.id not in product_ids_taken and len(line_ids)+1 <= maximum_item_count:
 						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(product)
 						line_ids_from_rule.append({
 							'location_id': location.id,
 							'product_id': product,
 						})
-					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(product_ids_taken) == maximum_item_count:
+					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(line_ids) == maximum_item_count:
 						break
 				line_ids.extend(line_ids_from_rule)
 			
