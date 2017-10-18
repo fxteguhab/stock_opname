@@ -168,7 +168,6 @@ class stock_opname_memory(osv.osv_memory):
 					for product in line.product_id:
 						product_ids_taken.append(product.id)
 		# Handle SO inject
-			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True), ('location_id', '=', location.id)], order='priority ASC, id ASC')
 			first = True
@@ -182,7 +181,7 @@ class stock_opname_memory(osv.osv_memory):
 					if maximum_item_count != 0:
 						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(inject.product_id)
-						line_ids_from_inject.append({
+						line_ids.append({
 							'location_id': location.id,
 							'product_id': inject.product_id,
 							'inject_id': inject.id,
@@ -193,14 +192,13 @@ class stock_opname_memory(osv.osv_memory):
 							inject.product_id not in product_ids_taken and len(line_ids) + 1 <= maximum_item_count:
 						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(inject.product_id)
-						line_ids_from_inject.append({
+						line_ids.append({
 							'location_id': location.id,
 							'product_id': inject.product_id,
 							'inject_id': inject.id,
 						})
 					elif total_qty == maximum_qty or len(line_ids) == maximum_item_count:
 						break
-			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
 		# if there are possibilities to add more item
@@ -213,7 +211,6 @@ class stock_opname_memory(osv.osv_memory):
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
-				line_ids_from_rule = []
 				product_obj = self.pool.get('product.product')
 				for product in rule_products:
 					product = product_obj.browse(cr, uid, [product['product_id']])
@@ -223,14 +220,12 @@ class stock_opname_memory(osv.osv_memory):
 							product.id not in product_ids_taken and len(line_ids)+1 <= maximum_item_count:
 						total_qty += theoretical_qty if theoretical_qty > 0 else 0
 						product_ids_taken.append(product)
-						line_ids_from_rule.append({
+						line_ids.append({
 							'location_id': location.id,
 							'product_id': product,
 						})
 					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(line_ids) == maximum_item_count:
 						break
-				line_ids.extend(line_ids_from_rule)
-			
 			return line_ids
 	
 	def _get_rule_id(self, cr, uid, context={}):
