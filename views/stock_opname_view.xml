@@ -71,7 +71,7 @@
 					<group>
 						<field name="date"/>
 						<field name="location_id" on_change="onchange_location_and_employee(location_id, rule_id, employee_id)"/>
-						<field name="employee_id"/>
+						<field name="employee_id" on_change="onchange_location_and_employee(location_id, rule_id, employee_id)"/>
 						<field name="create_uid" readonly="1"/>
 						<field name="rule_id" invisible="1"/>
 						<field name="line_ids">
