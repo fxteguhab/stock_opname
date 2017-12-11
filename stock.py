@@ -55,13 +55,11 @@ class stock_inventory(osv.osv):
 		"""
 		today = datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 	# Pool every stock.inventory with draft or confirmed state
-		stock_inventory_ids = self.search(cr, uid, [('state', 'in', ['draft', 'confirm'] )])
-		for stock_inventory in self.browse(cr, uid, stock_inventory_ids):
-			if today > stock_inventory.expiration_date:
-			# If it is expired, cancel stock.inventory
-				self.action_cancel_inventory(cr, uid, [stock_inventory.id], context)
-			pass
-		pass
+		stock_inventory_ids = self.search(cr, uid, [
+			('state', 'in', ['draft', 'confirm']),  # draft or in progress
+			('expiration_date', '<', today),
+		])
+		self.action_cancel_inventory(cr, uid, stock_inventory_ids, context)
 
 # ==========================================================================================================================
 
