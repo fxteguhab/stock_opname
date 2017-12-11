@@ -251,6 +251,9 @@ class stock_opname_memory(osv.osv_memory):
 		today = datetime.now()
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
+			# employee cannot have more than one draft/in progress stock opname
+			stock_opname_obj._check_employee_doing_another_stock_inventory(cr, uid, memory.employee_id.id, context=context)
+			
 			if not is_override and not memory.rule_id:
 				raise osv.except_osv(_('Stock Opname Error'),
 					_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
