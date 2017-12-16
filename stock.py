@@ -20,15 +20,14 @@ class stock_inventory(osv.osv):
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
 	
 	def create(self, cr, uid, data, context=None):
-		self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], context=context)
+		self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
 		return super(stock_inventory, self).create(cr, uid, data, context)
 	
 	def write(self, cr, uid, ids, data, context=None):
 		if data.get('employee_id', False):
-			self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], context=context)
-		else:
-			for stock_inventory in self.browse(cr, uid, ids, context=context):
-				self._check_employee_doing_another_stock_inventory(cr, uid, stock_inventory.employee_id.id, context=context)
+			for si in self.browse(cr, uid, ids, context=context):
+				if si.employee_id.id != data['employee_id']:
+					self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
 		return super(stock_inventory, self).write(cr, uid, ids, data, context)
 	
 	def action_done(self, cr, uid, ids, context=None):
@@ -62,23 +61,23 @@ class stock_inventory(osv.osv):
 	
 	# METHODS ---------------------------------------------------------------------------------------------------------------
 	
-	def _check_employee_doing_another_stock_inventory(self, cr, uid, employee_id, context=None):
+	def _check_employee_doing_another_stock_inventory(self, cr, uid, employee_id, limit, context=None):
 		"""
 		Method to check whether employee have another stock inventory in draft or in progress state or not.
 		If the employee does, raise error.
 		"""
-		if self._is_employee_doing_another_stock_inventory(cr, uid, employee_id, context=context):
+		if self._is_employee_doing_another_stock_inventory(cr, uid, employee_id, limit, context=context):
 			raise osv.except_osv(_('Stock Inventory Error'),
 				_('Employee have another draft or in progress stock inventory.'))
 	
-	def _is_employee_doing_another_stock_inventory(self, cr, uid, employee_id, context=None):
+	def _is_employee_doing_another_stock_inventory(self, cr, uid, employee_id, limit, context=None):
 		cr.execute("""
 			SELECT id, employee_id
 			FROM stock_inventory
 			WHERE (state = 'draft' OR state = 'confirm') AND employee_id = {}
 		""".format(employee_id))
 		other_stock_inventory_ids = cr.dictfetchall()
-		if other_stock_inventory_ids and len(other_stock_inventory_ids):
+		if other_stock_inventory_ids and len(other_stock_inventory_ids) >= limit:
 			return True
 		else:
 			return False
