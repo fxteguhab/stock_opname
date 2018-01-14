@@ -107,17 +107,18 @@ class stock_opname_memory(osv.osv_memory):
 	_defaults = {
 		'rule_id': _default_rule_id,
 		'date': lambda self, cr, uid, context: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
+		'create_uid': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, [uid]).id,
 	}
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
 	
-	def onchange_location_id(self, cr, uid, ids, location_id, rule_id, context={}):
+	def onchange_location_and_employee(self, cr, uid, ids, location_id, rule_id, employee_id, context={}):
 		if not context.get('is_override', False) and not rule_id:
 			raise osv.except_orm(_('Generating Stock Opname Error'),
 				_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
 		line_ids = []
 		stock_location_obj = self.pool.get('stock.location')
-		if location_id:
+		if location_id and employee_id:
 			location = stock_location_obj.browse(cr, uid, location_id)
 			line_ids = self._get_line_ids(cr, uid, location, context)
 		return {'value': {'line_ids': line_ids}}
@@ -144,91 +145,99 @@ class stock_opname_memory(osv.osv_memory):
 			total_qty = uom_obj._compute_qty_obj(cr, uid, product.uom_id, total_qty, product_uom, context=context)
 		return total_qty
 	
+	def _get_product_ids_excluded(self, cr, uid, location_id, context=None):
+		"""
+		Get product ids of stock inventories in draft or confirm (in progress) state.
+		This exluded product ids should not be generated in stock opname.
+		"""
+		cr.execute("""
+			SELECT DISTINCT stock_inventory_line.product_id
+			FROM
+				stock_inventory_line JOIN stock_inventory
+				ON stock_inventory_line.inventory_id = stock_inventory.id
+			WHERE
+				stock_inventory.location_id = {} AND
+				(stock_inventory.state = 'draft' OR stock_inventory.state = 'confirm')
+		""".format(location_id))
+		excluded_products = cr.dictfetchall()
+		excluded_product_ids = []
+		for excluded_product in excluded_products:
+			excluded_product_ids.append(excluded_product['product_id'])
+		return excluded_product_ids
+	
 	def _get_line_ids(self, cr, uid, location, context=None):
 		if context is None or (context is not None and not context.get('is_override', False)):
 		# Getting the rule first
 			active_rule_id = self._get_rule_id(cr, uid, context)
 			rule_obj = self.pool.get('stock.opname.rule')
 			active_rule = rule_obj.browse(cr, uid, active_rule_id)
-			
+		
 		# Process the rule with product_ids in inject if any
 			line_ids = []
-			product_ids_taken = []
+			product_ids_taken = self._get_product_ids_excluded(cr, uid, location.id, context=context)
 			maximum_item_count = active_rule.max_item_count
 			total_qty = 0
 			maximum_qty = active_rule.max_total_qty
 		
-		# Insert product ids in Pending SO to product_ids_taken so that it won't be taken again
-			stock_opname_obj = self.pool.get('stock.inventory')
-			pending_so_ids = stock_opname_obj.search(cr, uid, [('location_id', '=', location.id), ('state', 'in', ['draft','confirm'])])
-			pending_so = stock_opname_obj.browse(cr, uid, pending_so_ids)
-			for so in pending_so:
-				for line in so.line_ids:
-					for product in line.product_id:
-						product_ids_taken.append(product.id)
 		# Handle SO inject
-			line_ids_from_inject = []
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True), ('location_id', '=', location.id)], order='priority ASC, id ASC')
 			first = True
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
-				product = inject.product_id
-				product_uom = inject.product_id.uom_id
-				theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
+				inject_product = inject.product_id
+				product_uom = inject_product.uom_id
+				theoretical_qty = self._get_theoretical_qty(cr, uid, location, inject_product, product_uom, context)
 			# untuk inject tidak usah cek maximum_qty, karena sifatnya wajib
 			# maximum_item_count tetap diperiksa, though...
 				if first:
 					if maximum_item_count != 0:
-						total_qty += theoretical_qty
-						product_ids_taken.append(inject.product_id)
-						line_ids_from_inject.append({
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
+						product_ids_taken.append(inject_product.id)
+						line_ids.append({
 							'location_id': location.id,
-							'product_id': inject.product_id,
+							'product_id': inject_product,
 							'inject_id': inject.id,
 						})
 						first = False
 				else:
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-							inject.product_id not in product_ids_taken and len(product_ids_taken) + 1 <= maximum_item_count:
-						total_qty += theoretical_qty
-						product_ids_taken.append(inject.product_id)
-						line_ids_from_inject.append({
+							inject_product.id not in product_ids_taken and len(line_ids) + 1 <= maximum_item_count:
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
+						product_ids_taken.append(inject_product.id)
+						line_ids.append({
 							'location_id': location.id,
-							'product_id': inject.product_id,
+							'product_id': inject_product,
 							'inject_id': inject.id,
 						})
-					elif total_qty == maximum_qty or len(product_ids_taken) == maximum_item_count:
+					elif total_qty == maximum_qty or len(line_ids) == maximum_item_count:
 						break
-			line_ids.extend(line_ids_from_inject)
 			
 		# Process the rule with the algorithm
 		# if there are possibilities to add more item
-			if (maximum_qty == 0 or total_qty < maximum_qty) and len(product_ids_taken) < maximum_item_count:
+			if (maximum_qty == 0 or total_qty < maximum_qty) and len(line_ids) < maximum_item_count:
 				try:
 					exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
 					rule_products = generate_stock_opname_products(self, cr, uid)
+					# rule_products = self.generate_stock_opname_products(cr, uid)
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
-				line_ids_from_rule = []
 				product_obj = self.pool.get('product.product')
-				for product in rule_products:
-					product = product_obj.browse(cr, uid, [product['product_id']])
+				for rule_product in rule_products:
+					product = product_obj.browse(cr, uid, [rule_product['product_id']])
 					product_uom = product.uom_id
 					theoretical_qty = self._get_theoretical_qty(cr, uid, location, product, product_uom, context)
 					if (maximum_qty == 0 or total_qty + theoretical_qty <= maximum_qty) and \
-							product not in product_ids_taken and len(product_ids_taken)+1 <= maximum_item_count:
-						total_qty += theoretical_qty
-						product_ids_taken.append(product)
-						line_ids_from_rule.append({
+							product.id not in product_ids_taken and len(line_ids)+1 <= maximum_item_count:
+						total_qty += theoretical_qty if theoretical_qty > 0 else 0
+						product_ids_taken.append(product.id)
+						line_ids.append({
 							'location_id': location.id,
 							'product_id': product,
 						})
-					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(product_ids_taken) == maximum_item_count:
+					elif (maximum_qty != 0 and total_qty == maximum_qty) or len(line_ids) == maximum_item_count:
 						break
-				line_ids.extend(line_ids_from_rule)
-			
 			return line_ids
 	
 	def _get_rule_id(self, cr, uid, context={}):

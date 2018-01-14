@@ -1,6 +1,7 @@
 from datetime import datetime
 from openerp.osv import osv, fields
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from openerp.tools.translate import _
 
 # ==========================================================================================================================
 
@@ -18,12 +19,23 @@ class stock_inventory(osv.osv):
 	
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
 	
+	def create(self, cr, uid, data, context=None):
+		self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
+		return super(stock_inventory, self).create(cr, uid, data, context)
+	
+	def write(self, cr, uid, ids, data, context=None):
+		if data.get('employee_id', False):
+			for si in self.browse(cr, uid, ids, context=context):
+				if si.employee_id.id != data['employee_id']:
+					self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
+		return super(stock_inventory, self).write(cr, uid, ids, data, context)
+	
 	def action_done(self, cr, uid, ids, context=None):
 		result = super(stock_inventory, self).action_done(cr, uid, ids, context=context)
 		product_obj = self.pool.get('product.product')
 		inventory_line_obj = self.pool.get('stock.inventory.line')
 		for inv in self.browse(cr, uid, ids, context=context):
-			for line in inventory_line_obj.browse(cr, uid, inv.line_ids, context=context).ids:
+			for line in inventory_line_obj.browse(cr, uid, inv.line_ids.ids, context=context):
 				product_obj.write(cr, uid, line.product_id.id, {
 					'latest_inventory_adjustment_date': datetime.now(),
 					'latest_inventory_adjustment_employee_id': inv.employee_id and inv.employee_id.id or None,
@@ -47,6 +59,29 @@ class stock_inventory(osv.osv):
 			self.write(cr, uid, [inv.id], {'state': 'cancel'}, context=context)
 		return True
 	
+	# METHODS ---------------------------------------------------------------------------------------------------------------
+	
+	def _check_employee_doing_another_stock_inventory(self, cr, uid, employee_id, limit, context=None):
+		"""
+		Method to check whether employee have another stock inventory in draft or in progress state or not.
+		If the employee does, raise error.
+		"""
+		if self._is_employee_doing_another_stock_inventory(cr, uid, employee_id, limit, context=context):
+			raise osv.except_osv(_('Stock Inventory Error'),
+				_('Employee have another draft or in progress stock inventory.'))
+	
+	def _is_employee_doing_another_stock_inventory(self, cr, uid, employee_id, limit, context=None):
+		cr.execute("""
+			SELECT id, employee_id
+			FROM stock_inventory
+			WHERE (state = 'draft' OR state = 'confirm') AND employee_id = {}
+		""".format(employee_id))
+		other_stock_inventory_ids = cr.dictfetchall()
+		if other_stock_inventory_ids and len(other_stock_inventory_ids) >= limit:
+			return True
+		else:
+			return False
+	
 	# CRON ------------------------------------------------------------------------------------------------------------------
 	
 	def cron_autocancel_expired_stock_opname(self, cr, uid, context=None):
@@ -55,13 +90,11 @@ class stock_inventory(osv.osv):
 		"""
 		today = datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT)
 	# Pool every stock.inventory with draft or confirmed state
-		stock_inventory_ids = self.search(cr, uid, [('state', 'in', ['draft', 'confirm'] )])
-		for stock_inventory in self.browse(cr, uid, stock_inventory_ids):
-			if today > stock_inventory.expiration_date:
-			# If it is expired, cancel stock.inventory
-				self.action_cancel_inventory(cr, uid, [stock_inventory.id], context)
-			pass
-		pass
+		stock_inventory_ids = self.search(cr, uid, [
+			('state', 'in', ['draft', 'confirm']),  # draft or in progress
+			('expiration_date', '<', today),
+		])
+		self.action_cancel_inventory(cr, uid, stock_inventory_ids, context)
 
 # ==========================================================================================================================
 
