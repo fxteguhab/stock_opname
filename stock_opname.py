@@ -306,7 +306,7 @@ class stock_opname_memory(osv.osv_memory):
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
-			stock_opname_obj.action_done(cr, uid, stock_inventory_ids)
+			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, context)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
