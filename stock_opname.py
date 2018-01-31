@@ -164,6 +164,10 @@ class stock_opname_memory(osv.osv_memory):
 		for excluded_product in excluded_products:
 			excluded_product_ids.append(excluded_product['product_id'])
 		return excluded_product_ids
+
+	def _generate_stock_opname_products(self, cr, uid, context={}):
+	# to be overridden by inheriting models
+		return []
 	
 	def _get_line_ids(self, cr, uid, location, context=None):
 		if context is None or (context is not None and not context.get('is_override', False)):
@@ -216,10 +220,10 @@ class stock_opname_memory(osv.osv_memory):
 		# if there are possibilities to add more item
 			if (maximum_qty == 0 or total_qty < maximum_qty) and len(line_ids) < maximum_item_count:
 				try:
-					exec active_rule.algorithm
+					#exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
-					rule_products = generate_stock_opname_products(self, cr, uid)
-					# rule_products = self.generate_stock_opname_products(cr, uid)
+					#rule_products = generate_stock_opname_products(self, cr, uid)
+					rule_products = self._generate_stock_opname_products(cr, uid, context)
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
@@ -306,7 +310,7 @@ class stock_opname_memory(osv.osv_memory):
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
-			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, context)
+			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, conte)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
