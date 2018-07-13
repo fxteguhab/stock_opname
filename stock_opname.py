@@ -93,10 +93,12 @@ class stock_opname_memory(osv.osv_memory):
 	
 	_columns = {
 		'date': fields.datetime('Date', required=True),
+		#TEGUH @20180331 : Add field name
+		'name': fields.char('Inventory Reference', help="Inventory Name.",required = True),
 		'location_id': fields.many2one('stock.location', 'Inventoried Location', required=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 		'rule_id': fields.many2one('stock.opname.rule', 'Rule'),
-		'line_ids': fields.one2many('stock.opname.memory.line', 'stock_opname_memory_id', 'Inventories', help="Inventory Lines."),
+		'line_ids': fields.one2many('stock.opname.memory.line', 'stock_opname_memory_id', 'Inventories', help="Inventory Lines."),	
 	}
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
@@ -108,6 +110,7 @@ class stock_opname_memory(osv.osv_memory):
 		'rule_id': _default_rule_id,
 		'date': lambda self, cr, uid, context: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 		'create_uid': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, [uid]).id,
+		'name' : 'SO'
 	}
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
@@ -293,7 +296,9 @@ class stock_opname_memory(osv.osv_memory):
 			memory_hour = int(memory.rule_id.expiration_time_length)
 			memory_minute = (memory.rule_id.expiration_time_length - memory_hour) * 60
 			stock_opname = {
-				'name': 'SO %s %s' % (memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+				#TEGUH@20180331 : ubah reference SO + custom name
+				'name': '%s - %s %s' % (memory.name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+				#'name': 'SO @%s - %s (%s) - %s Row(s)' % (memory.location_id.name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),len(memory.line_ids)),
 				'state': 'confirm', # if memory.rule_id.id else 'done',
 				'date': memory.date,
 				'expiration_date': (
@@ -310,7 +315,7 @@ class stock_opname_memory(osv.osv_memory):
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
 		if is_override:
-			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, conte)
+			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, context=context)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})

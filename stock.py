@@ -2,6 +2,71 @@ from datetime import datetime
 from openerp.osv import osv, fields
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.tools.translate import _
+from openerp import tools
+
+
+# ==========================================================================================================================
+#TEGUH@20180413 : tambah inheritance dr class  stock change product qty, spy bisa nyambung Stock Opname dari form product
+class stock_change_product_qty(osv.osv_memory):
+	
+	_inherit = 'stock.change.product.qty'
+	
+	# COLUMNS ---------------------------------------------------------------------------------------------------------------
+	
+	_columns = {
+		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
+		'location_id': fields.many2one('stock.location', 'Inventoried Location', required=True)
+	}
+
+	
+	_defaults = {
+		'employee_id': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, [uid]).id,
+		'location_id': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, uid, ctx).branch_id.default_outgoing_location_id.id
+	}
+
+	# OVERRIDES====================================================================
+	def change_product_qty(self, cr, uid, ids, context=None):
+		""" Changes the Product Quantity by making a Physical Inventory.
+		@param self: The object pointer.
+		@param cr: A database cursor
+		@param uid: ID of the user currently logged in
+		@param ids: List of IDs selected
+		@param context: A standard dictionary
+		@return:
+		"""
+		if context is None:
+			context = {}
+
+		inventory_obj = self.pool.get('stock.inventory')
+		inventory_line_obj = self.pool.get('stock.inventory.line')
+
+		for data in self.browse(cr, uid, ids, context=context):
+			if data.new_quantity < 0:
+				raise osv.except_osv(_('Warning!'), _('Quantity cannot be negative.'))
+			ctx = context.copy()
+			ctx['location'] = data.location_id.id
+			#ctx['lot_id'] = data.lot_id.id
+			ctx['employee_id'] = data.employee_id.id
+
+			if data.product_id.id and data.lot_id.id:
+				filter = 'none'
+			elif data.product_id.id:
+				filter = 'product'
+			else:
+				filter = 'none'
+			inventory_id = inventory_obj.create(cr, uid, {
+				'name': _('INV: %s') % tools.ustr(data.product_id.name),
+				'filter': filter,
+				'product_id': data.product_id.id,
+				'location_id': data.location_id.id,
+				#'lot_id': data.lot_id.id}, context=context)
+				'employee_id': data.employee_id.id},context = context)
+
+			line_data = self._prepare_inventory_line(cr, uid, inventory_id, data, context=context)
+
+			inventory_line_obj.create(cr, uid, line_data, context=context)
+			inventory_obj.action_done(cr, uid, [inventory_id], context=context)
+		return {}
 
 # ==========================================================================================================================
 
@@ -109,3 +174,4 @@ class stock_inventory_line(osv.osv):
 	}
 
 # ==========================================================================================================================
+

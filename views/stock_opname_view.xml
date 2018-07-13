@@ -76,12 +76,13 @@
 						<field name="rule_id" invisible="1" options="{'no_create': 1'}"/>
 						<field name="line_ids">
 							<tree editable="bottom">
-								<field name="location_id" options="{'no_create': 1'}" />
+								<!-- TEGUH@20180414 : hapus location_id dan tuker posisi qty & uom -->
+								<!--<field name="location_id" options="{'no_create': 1'}" /> -->
 								<field name="product_id" domain="[('type','=','product')]" options="{'no_create': 1'}"/>
-								<field name="product_uom_id" invisible="not context.get('is_override', False)"
-										required="context.get('is_override', False)" options="{'no_create': 1'}"/>
 								<field name="product_qty" invisible="not context.get('is_override', False)"
 										required="context.get('is_override', False)"/>
+								<field name="product_uom_id" invisible="not context.get('is_override', False)"
+										required="context.get('is_override', False)" options="{'no_create': 1'}"/>
 								<field name="inject_id" invisible="1" options="{'no_create': 1'}"/>
 							</tree>
 						</field>
