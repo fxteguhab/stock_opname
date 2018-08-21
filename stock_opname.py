@@ -168,7 +168,7 @@ class stock_opname_memory(osv.osv_memory):
 			excluded_product_ids.append(excluded_product['product_id'])
 		return excluded_product_ids
 
-	def _generate_stock_opname_products(self, cr, uid, context={}):
+	def _generate_stock_opname_products(self, cr, uid, location,context={}):
 	# to be overridden by inheriting models
 		return []
 	
@@ -226,7 +226,7 @@ class stock_opname_memory(osv.osv_memory):
 					#exec active_rule.algorithm
 					# noinspection PyUnresolvedReferences
 					#rule_products = generate_stock_opname_products(self, cr, uid)
-					rule_products = self._generate_stock_opname_products(cr, uid, context)
+					rule_products = self._generate_stock_opname_products(cr, uid, location.id,context)
 				except Exception as ex:
 					raise osv.except_orm(_('Stock Opname Generate Error'),
 						_('Syntax or other error(s) in the code of selected Stock Opname Rule.'))
