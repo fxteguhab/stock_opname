@@ -95,17 +95,17 @@ class stock_inventory(osv.osv):
 					self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
 		return super(stock_inventory, self).write(cr, uid, ids, data, context)
 	
-	def action_done(self, cr, uid, ids, context=None):
-		result = super(stock_inventory, self).action_done(cr, uid, ids, context=context)
-		product_obj = self.pool.get('product.product')
-		inventory_line_obj = self.pool.get('stock.inventory.line')
-		for inv in self.browse(cr, uid, ids, context=context):
-			for line in inventory_line_obj.browse(cr, uid, inv.line_ids.ids, context=context):
-				product_obj.write(cr, uid, line.product_id.id, {
-					'latest_inventory_adjustment_date': datetime.now(),
-					'latest_inventory_adjustment_employee_id': inv.employee_id and inv.employee_id.id or None,
-				})
-		return result
+	#def action_done(self, cr, uid, ids, context=None):
+	#	result = super(stock_inventory, self).action_done(cr, uid, ids, context=context)
+	#	product_obj = self.pool.get('product.product')
+	#	inventory_line_obj = self.pool.get('stock.inventory.line')
+	#	for inv in self.browse(cr, uid, ids, context=context):
+	#		for line in inventory_line_obj.browse(cr, uid, inv.line_ids.ids, context=context):
+	#			product_obj.write(cr, uid, line.product_id.id, {
+	#				'latest_inventory_adjustment_date': datetime.now(),
+	#				'latest_inventory_adjustment_employee_id': inv.employee_id and inv.employee_id.id or None,
+	#			})
+	#	return result
 	
 	def action_cancel_inventory(self, cr, uid, ids, context=None):
 		""" Cancels the stock move and change inventory state to done.

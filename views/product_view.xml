@@ -7,10 +7,11 @@
 			<field name="inherit_id" ref="product.product_template_form_view"/>
 			<field name="arch" type="xml">
 				<group name="sale_condition" position="inside">
-					<label for="last_sale"/>
+					<!--<label for="last_sale"/>
 					<div>
 						<field name="last_sale" readonly="1"/>
-					</div>
+					</div>-->
+					<field nme ="last_sale" />
 				</group>
 			</field>
 		</record>
