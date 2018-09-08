@@ -4,6 +4,10 @@ from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.tools.translate import _
 from datetime import datetime, timedelta
 
+_EMPLOYEE_DOMAIN_TYPE = [
+	('is', 'Do'),
+	('not', 'Dont'),
+]
 
 class stock_opname_rule(osv.osv):
 	_name = "stock.opname.rule"
@@ -76,6 +80,8 @@ class stock_opname_inject(osv.osv):
 		'priority': fields.selection([(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5'), (6, '6')], 'Priority',
 			required=True),
 		'active': fields.boolean('Active'),
+		'domain': fields.selection(_EMPLOYEE_DOMAIN_TYPE, 'Domain'),
+		'employee_id' : fields.many2one('hr.employee','Employee'),
 	}
 	
 	# DEFAULTS --------------------------------------------------------------------------------------------------------------
@@ -83,6 +89,7 @@ class stock_opname_inject(osv.osv):
 	_defaults = {
 		'priority': 1,
 		'active': True,
+		'location_id': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, uid, ctx).branch_id.default_stock_location_id.id,
 	}
 
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -124,7 +131,7 @@ class stock_opname_memory(osv.osv_memory):
 		stock_location_obj = self.pool.get('stock.location')
 		if location_id and employee_id:
 			location = stock_location_obj.browse(cr, uid, location_id)
-			line_ids = self._get_line_ids(cr, uid, location, context)
+			line_ids = self._get_line_ids(cr, uid, location, employee_id, context)
 		return {'value': {'line_ids': line_ids}}
 	
 	# METHODS ---------------------------------------------------------------------------------------------------------------
@@ -173,7 +180,7 @@ class stock_opname_memory(osv.osv_memory):
 	# to be overridden by inheriting models
 		return []
 	
-	def _get_line_ids(self, cr, uid, location, context=None):
+	def _get_line_ids(self, cr, uid, location, employee_id,context=None):
 		if context is None or (context is not None and not context.get('is_override', False)):
 		# Getting the rule first
 			active_rule_id = self._get_rule_id(cr, uid, context)
@@ -189,7 +196,11 @@ class stock_opname_memory(osv.osv_memory):
 		
 		# Handle SO inject
 			stock_opname_inject_obj = self.pool.get('stock.opname.inject')
-			inject_ids = stock_opname_inject_obj.search(cr, uid, [('active', '=', True), ('location_id', '=', location.id)], order='priority ASC, id ASC')
+			inject_ids = stock_opname_inject_obj.search(cr, uid, ['&','&',('active', '=', True), ('location_id', '=', location.id),
+				'|',('employee_id','=',False),
+				'|','&',('employee_id','=',employee_id),('domain','=','is'),
+				'&',('employee_id','!=',employee_id),('domain','=','not'),
+				], order='priority ASC, id ASC')
 			first = True
 			for inject in stock_opname_inject_obj.browse(cr, uid, inject_ids):
 				inject_product = inject.product_id
@@ -286,6 +297,7 @@ class stock_opname_memory(osv.osv_memory):
 					'location_id': memory.location_id.id,
 					'product_id': line.product_id.id,
 					'inject_id': line.inject_id and line.inject_id.id or None,
+					'inject_by': line.inject_id.create_uid.partner_id.name or None,
 				}
 				if is_override:
 					so_name = 'OVR.'+memory.name

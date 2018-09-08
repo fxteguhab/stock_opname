@@ -171,6 +171,7 @@ class stock_inventory_line(osv.osv):
 	
 	_columns = {
 		'inject_id': fields.many2one('stock.opname.inject', 'Inject'),
+		'inject_by': fields.char('Request From', readonly=True),
 	}
 
 # ==========================================================================================================================
