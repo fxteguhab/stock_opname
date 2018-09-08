@@ -110,7 +110,8 @@ class stock_opname_memory(osv.osv_memory):
 		'rule_id': _default_rule_id,
 		'date': lambda self, cr, uid, context: datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
 		'create_uid': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, [uid]).id,
-		'name' : 'SO'
+		'name' : 'SO',
+		'branch_id': lambda self, cr, uid, ctx: self.pool.get('res.users').browse(cr, uid, uid, ctx).branch_id.id,
 	}
 	
 	# ONCHANGES -------------------------------------------------------------------------------------------------------------
@@ -264,12 +265,14 @@ class stock_opname_memory(osv.osv_memory):
 		if context is None:
 			context = {}
 		is_override =context.get('is_override', False)
+		so_name = ''
 		stock_opname_obj = self.pool.get('stock.inventory')
 		stock_opname_inject_obj = self.pool.get('stock.opname.inject')
 		stock_opname_memory_line_obj = self.pool.get('stock.opname.memory.line')
 		today = datetime.now()
 		stock_inventory_ids = []
 		for memory in self.browse(cr, uid, ids):
+			so_name = memory.name
 			if not is_override and not memory.rule_id:
 				raise osv.except_osv(_('Stock Opname Error'),
 					_('There is no Stock Opname Rule marked as being used. Please select a rule to be used first.'))
@@ -285,6 +288,7 @@ class stock_opname_memory(osv.osv_memory):
 					'inject_id': line.inject_id and line.inject_id.id or None,
 				}
 				if is_override:
+					so_name = 'OVR.'+memory.name
 					vals.update({
 						'product_uom_id': line.product_uom_id.id,
 						'product_qty': line.product_qty,
@@ -297,7 +301,8 @@ class stock_opname_memory(osv.osv_memory):
 			memory_minute = (memory.rule_id.expiration_time_length - memory_hour) * 60
 			stock_opname = {
 				#TEGUH@20180331 : ubah reference SO + custom name
-				'name': '%s - %s %s' % (memory.name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+				'name': '%s - %s %s' % (so_name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
+				#'name': '%s - %s %s' % (memory.name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
 				#'name': 'SO @%s - %s (%s) - %s Row(s)' % (memory.location_id.name,memory.employee_id.name, (today + timedelta(hours=7)).strftime(DEFAULT_SERVER_DATETIME_FORMAT),len(memory.line_ids)),
 				'state': 'confirm', # if memory.rule_id.id else 'done',
 				'date': memory.date,
@@ -309,6 +314,7 @@ class stock_opname_memory(osv.osv_memory):
 				'location_id': memory.location_id.id,
 				'is_override': is_override,
 				'line_ids': line_ids,
+				'branch_id': memory.branch_id.id,
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
 	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
