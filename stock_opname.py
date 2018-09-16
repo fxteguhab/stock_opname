@@ -327,6 +327,7 @@ class stock_opname_memory(osv.osv_memory):
 				'is_override': is_override,
 				'line_ids': line_ids,
 				'branch_id': memory.branch_id.id,
+				'filter' : 'partial',
 			}
 			stock_inventory_ids.append(stock_opname_obj.create(cr, uid, stock_opname, context))
 	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
