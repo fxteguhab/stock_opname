@@ -1,5 +1,6 @@
 from datetime import datetime
 from openerp.osv import osv, fields
+from openerp import api
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.tools.translate import _
 from openerp import tools
@@ -55,7 +56,7 @@ class stock_change_product_qty(osv.osv_memory):
 			else:
 				filter = 'none'
 			inventory_id = inventory_obj.create(cr, uid, {
-				'name': _('INV: %s') % tools.ustr(data.product_id.name),
+				'name': _('PRODUCT.SO: %s') % tools.ustr(data.product_id.name),
 				'filter': filter,
 				'product_id': data.product_id.id,
 				'location_id': data.location_id.id,
@@ -80,12 +81,43 @@ class stock_inventory(osv.osv):
 		'expiration_date': fields.datetime('Expiration Date', readonly=True),
 		'employee_id': fields.many2one('hr.employee', 'Employee', required=True),
 		'is_override': fields.boolean('Is Override'),
+		'validity' : fields.float('Validity(%)', compute="_compute_validity", group_operator="avg",store="False"),
+		'line_count':fields.float('Line(s)', compute="_compute_line", group_operator="sum",store="False"),
+		'move_count':fields.float('Adjustment(s)', compute="_compute_move", group_operator="sum",store="False"),
 	}
 	
+	_defaults = {
+		'validity' : 100,
+		'line_count' : 0,
+		'move_count' : 0,
+	}
+	# COMPUTE -------------------------------------------------------------------------------------------------------------
+	@api.one
+	@api.depends('move_count','line_count')
+	def _compute_validity(self):
+		for record in self:
+			if (record.line_count >0):
+				record.validity = (record.line_count - record.move_count)/record.line_count * 100
+
+	@api.one
+	@api.depends('line_ids')
+	def _compute_line(self):
+		for record in self:
+			if len(record.line_ids) > 0:
+				record.line_count = len(record.line_ids)
+				
+	@api.one
+	@api.depends('move_ids')
+	def _compute_move(self):
+		for record in self:
+			if len(record.move_ids) > 0:
+				record.move_count = len(record.move_ids)			
+
 	# OVERRIDES -------------------------------------------------------------------------------------------------------------
 	
 	def create(self, cr, uid, data, context=None):
 		self._check_employee_doing_another_stock_inventory(cr, uid, data['employee_id'], 1, context=context)
+
 		return super(stock_inventory, self).create(cr, uid, data, context)
 	
 	def write(self, cr, uid, ids, data, context=None):

@@ -10,6 +10,7 @@
 				</field>
 				<field name="date" position="after">
 					<field name="expiration_date"/>
+					<field name = "validity" widget="progressbar"/>
 				</field>
 				<!--<field name="theoretical_qty" position="attributes">
 					<attribute name="invisible">True</attribute>
@@ -19,6 +20,6 @@
 				</field>
 			</field>
 		</record>
-
 	</data>
 </openerp>
+
