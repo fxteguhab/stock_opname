@@ -20,6 +20,19 @@
 				</field>
 			</field>
 		</record>
+
+		<!-- TEGUH@20180413 : tambah field employee id -->
+		<record id="view_change_product_quantity_inherit" model="ir.ui.view">
+			<field name="name">Change Product Quantity.inherit</field>
+			<field name="model">stock.change.product.qty</field>
+			<field name="inherit_id" ref="stock.view_change_product_quantity"/>
+			<field name="arch" type="xml">
+				<field name="location_id" position="after">
+					<field name="employee_id"/>
+				</field>
+			</field>
+		</record>
+		
 	</data>
 </openerp>
 
