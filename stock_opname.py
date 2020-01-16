@@ -333,8 +333,9 @@ class stock_opname_memory(osv.osv_memory):
 	# kalau begitu di-create state langsung dijadikan confirm, maka stock movenya tidak dicatat alias
 	# stock opnamenya tidak ngefek ke stock product ybs. Maka dari itu di titik ini dipanggillah action yang buat
 	# men-done kan stock opname yang baru saja di-create di atas, khusus untuk override
-		if is_override:
-			stock_opname_obj.action_done(cr, uid, stock_inventory_ids, context=context)
+	#2020-01-16 : sekarang override juga harus di validate 1x lagi, spy bisa di print dulu sebelumnya di halaman report
+		#if is_override:
+			#stock_opname_obj.action_done(cr, uid, stock_inventory_ids, context=context)
 		action = {"type": "ir.actions.act_window", "res_model": "stock.inventory"}
 		if len(stock_inventory_ids) == 1:
 			action.update({"views": [[False, "form"]], "res_id": stock_inventory_ids[0]})
